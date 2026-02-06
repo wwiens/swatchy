@@ -754,7 +754,7 @@
   // Setup canvas with image
   function setupCanvas() {
     canvas = imageCanvas;
-    ctx = canvas.getContext('2d');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     // Resize for performance (max 800px width)
     const maxWidth = 800;
