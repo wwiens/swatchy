@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Swatchy - Color Tools for Ohuhu Markers{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="text-center py-12 md:py-16">
+  <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-6">
+    <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
+    100+ Ohuhu marker colors
+  </div>
+  <h1 class="text-4xl md:text-6xl font-bold mb-6">
+    <span class="bg-gradient-to-r from-primary-600 via-coral-500 to-orange-500 bg-clip-text text-transparent">
+      Swatchy
+    </span>
+  </h1>
+  <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+    A suite of color tools designed for Ohuhu marker artists.
+    Explore harmonies, generate palettes, and find the perfect colors for your next masterpiece.
+  </p>
+</div>
+
+<!-- Tools Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+  <!-- Color Wheel -->
+  <a href="/color-wheel" class="group">
+    <div class="bg-white rounded-2xl p-6 shadow-lg card-hover border border-gray-100 h-full">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400 via-yellow-400 to-blue-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20M2 12h20"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">Color Wheel</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">
+        Interactive color wheel with harmony modes. Find complementary, analogous, triadic, and split-complementary color combinations.
+      </p>
+      <div class="mt-4 flex items-center text-primary-600 font-medium text-sm">
+        Explore harmonies
+        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- Palette Generator -->
+  <a href="/palette-generator" class="group">
+    <div class="bg-white rounded-2xl p-6 shadow-lg card-hover border border-gray-100 h-full">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">Palette Generator</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">
+        Generate random color palettes with locking support. Keep colors you love and regenerate the rest with a tap.
+      </p>
+      <div class="mt-4 flex items-center text-primary-600 font-medium text-sm">
+        Generate palettes
+        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- Theme Library -->
+  <a href="/theme-library" class="group">
+    <div class="bg-white rounded-2xl p-6 shadow-lg card-hover border border-gray-100 h-full">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">Theme Library</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">
+        Browse pre-defined palette themes. From sunset vibes to ocean depths, find inspiration for your artwork.
+      </p>
+      <div class="mt-4 flex items-center text-primary-600 font-medium text-sm">
+        Browse themes
+        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- Image Picker -->
+  <a href="/image-picker" class="group">
+    <div class="bg-white rounded-2xl p-6 shadow-lg card-hover border border-gray-100 h-full">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">Image Picker</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">
+        Extract colors from uploaded images. Find the closest Ohuhu marker matches to any reference photo.
+      </p>
+      <div class="mt-4 flex items-center text-primary-600 font-medium text-sm">
+        Extract colors
+        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- Color Picker -->
+  <a href="/color-picker" class="group">
+    <div class="bg-white rounded-2xl p-6 shadow-lg card-hover border border-gray-100 h-full">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">Color Picker</h3>
+      <p class="text-gray-600 text-sm leading-relaxed">
+        Standalone color picker utility. Browse all available colors and find the perfect marker for your project.
+      </p>
+      <div class="mt-4 flex items-center text-primary-600 font-medium text-sm">
+        Browse colors
+        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<!-- Features Section -->
+<div class="mt-16 max-w-4xl mx-auto">
+  <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-100">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Features</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">Multiple Product Lines</h3>
+        <p class="text-sm text-gray-600">Support for Honolulu, Oahu, and Kaala marker lines</p>
+      </div>
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-full bg-coral-100 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-coral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">Smart Matching</h3>
+        <p class="text-sm text-gray-600">Find closest marker colors using HSV color space</p>
+      </div>
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h3 class="font-semibold text-gray-800 mb-1">Mobile Friendly</h3>
+        <p class="text-sm text-gray-600">Works great on phones, tablets, and desktops</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

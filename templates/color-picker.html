@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Color Picker - Swatchy{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Color Picker</h1>
+    <p class="text-gray-600">Browse all Ohuhu marker colors</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+    <div class="flex flex-wrap items-center gap-4">
+      <!-- Search -->
+      <div class="flex-1 min-w-64">
+        <div class="relative">
+          <input type="text" id="searchInput" placeholder="Search by name or code..."
+                 class="w-full px-4 py-2 pl-10 rounded-xl border border-gray-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Line Filter -->
+      <div class="flex items-center gap-2">
+        <label class="text-sm font-medium text-gray-700">Line:</label>
+        <select id="lineFilter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+          <option value="all">All Lines</option>
+          <option value="Honolulu">Honolulu</option>
+          <option value="Oahu">Oahu</option>
+          <option value="Kaala">Kaala</option>
+        </select>
+      </div>
+
+      <!-- Sort -->
+      <div class="flex items-center gap-2">
+        <label class="text-sm font-medium text-gray-700">Sort:</label>
+        <select id="sortBy" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+          <option value="name">Name</option>
+          <option value="code">Code</option>
+          <option value="hue">Hue</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Count -->
+  <div class="mb-4 text-sm text-gray-600">
+    Showing <span id="resultCount" class="font-semibold">0</span> colors
+  </div>
+
+  <!-- Color Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="colorGrid">
+    <!-- Colors will be rendered here -->
+  </div>
+
+  <!-- No Results -->
+  <div id="noResults" class="hidden text-center py-12">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <p class="text-gray-500">No colors found matching your search</p>
+  </div>
+</div>
+
+<!-- Color Detail Modal -->
+<div class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" id="colorModal">
+  <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden">
+    <div id="modalColorPreview" class="h-32 flex items-center justify-center">
+      <h2 id="modalColorName" class="text-2xl font-bold text-white drop-shadow-lg"></h2>
+    </div>
+    <div class="p-6">
+      <div class="text-center mb-6">
+        <div id="modalColorCode" class="text-4xl font-bold font-mono text-gray-800 mb-2"></div>
+        <div id="modalColorHex" class="text-lg text-gray-500 font-mono"></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 mb-1">Honolulu</div>
+          <div id="modalHonolulu" class="font-semibold text-gray-800"></div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 mb-1">Oahu</div>
+          <div id="modalOahu" class="font-semibold text-gray-800"></div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 mb-1">Kaala</div>
+          <div id="modalKaala" class="font-semibold text-gray-800"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button id="copyHexBtn" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+          Copy Hex
+        </button>
+        <button id="closeModalBtn" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-all translate-y-4 pointer-events-none" id="toast">
+  Copied to clipboard!
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let filteredMarkers = [];
+  let currentModalMarker = null;
+
+  // DOM Elements
+  const searchInput = document.getElementById('searchInput');
+  const lineFilter = document.getElementById('lineFilter');
+  const sortBy = document.getElementById('sortBy');
+  const colorGrid = document.getElementById('colorGrid');
+  const resultCount = document.getElementById('resultCount');
+  const noResults = document.getElementById('noResults');
+  const colorModal = document.getElementById('colorModal');
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadColorData();
+    filterAndRender();
+
+    // Event listeners
+    searchInput.addEventListener('input', filterAndRender);
+    lineFilter.addEventListener('change', filterAndRender);
+    sortBy.addEventListener('change', filterAndRender);
+
+    // Modal events
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('copyHexBtn').addEventListener('click', copyModalHex);
+    colorModal.addEventListener('click', (e) => {
+      if (e.target === colorModal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  });
+
+  // Filter and render colors
+  function filterAndRender() {
+    const query = searchInput.value.toLowerCase().trim();
+    const line = lineFilter.value;
+    const sort = sortBy.value;
+
+    // Filter
+    filteredMarkers = markers.filter(marker => {
+      const matchesSearch = !query ||
+        marker.name.toLowerCase().includes(query) ||
+        marker.code.toLowerCase().includes(query);
+
+      const matchesLine = line === 'all' || marker.lines.includes(line);
+
+      return matchesSearch && matchesLine;
+    });
+
+    // Sort
+    filteredMarkers.sort((a, b) => {
+      switch (sort) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'code':
+          return a.code.localeCompare(b.code);
+        case 'hue':
+          return a.hsv.h - b.hsv.h;
+        default:
+          return 0;
+      }
+    });
+
+    renderColors();
+  }
+
+  // Render color grid
+  function renderColors() {
+    resultCount.textContent = filteredMarkers.length;
+
+    if (filteredMarkers.length === 0) {
+      colorGrid.innerHTML = '';
+      noResults.classList.remove('hidden');
+      return;
+    }
+
+    noResults.classList.add('hidden');
+
+    colorGrid.innerHTML = filteredMarkers.map(marker => {
+      const textColor = calculateBrightness(marker.hex) > 128 ? '#000' : '#fff';
+
+      return `
+        <div class="group bg-white rounded-xl shadow-md overflow-hidden cursor-pointer card-hover"
+             onclick="openModal('${marker.name}')">
+          <div class="h-24 flex items-center justify-center" style="background: ${marker.hex}">
+            <span class="font-bold text-lg ${textColor === '#000' ? 'text-black' : 'text-white'} drop-shadow-md">
+              ${marker.code}
+            </span>
+          </div>
+          <div class="p-3">
+            <div class="font-medium text-gray-800 text-sm truncate">${marker.name}</div>
+            <div class="flex items-center justify-between mt-1">
+              <span class="text-xs text-gray-500 font-mono">${marker.hex}</span>
+              <button onclick="event.stopPropagation(); copyToClipboard('${marker.hex}')"
+                      class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Copy hex">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Open color modal
+  function openModal(markerName) {
+    const marker = markers.find(m => m.name === markerName);
+    if (!marker) return;
+
+    currentModalMarker = marker;
+
+    const textColor = calculateBrightness(marker.hex) > 128 ? '#000' : '#fff';
+
+    document.getElementById('modalColorPreview').style.background = marker.hex;
+    document.getElementById('modalColorName').textContent = marker.name;
+    document.getElementById('modalColorName').style.color = textColor;
+    document.getElementById('modalColorCode').textContent = marker.code;
+    document.getElementById('modalColorHex').textContent = marker.hex;
+    document.getElementById('modalHonolulu').textContent = marker.data.Honolulu || '—';
+    document.getElementById('modalOahu').textContent = marker.data.Oahu || '—';
+    document.getElementById('modalKaala').textContent = marker.data.Kaala || '—';
+
+    colorModal.classList.remove('hidden');
+    colorModal.classList.add('flex');
+  }
+
+  // Close modal
+  function closeModal() {
+    colorModal.classList.add('hidden');
+    colorModal.classList.remove('flex');
+    currentModalMarker = null;
+  }
+
+  // Copy hex from modal
+  async function copyModalHex() {
+    if (currentModalMarker) {
+      await copyToClipboard(currentModalMarker.hex);
+    }
+  }
+
+  // Copy to clipboard
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`Copied ${text}`);
+    } catch (err) {
+      showToast('Failed to copy');
+    }
+  }
+
+  // Show toast
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+    }, 2000);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Theme Library - Swatchy{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Theme Library</h1>
+    <p class="text-gray-600">Discover curated color palettes for your artwork</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+      <!-- Search by seed color -->
+      <div class="flex-1">
+        <div class="relative">
+          <input type="text" id="seedSearch" placeholder="Search by theme name, color, or code..."
+                 class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+                 autocomplete="off">
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <!-- Color Suggestions Dropdown -->
+          <div id="colorSuggestions" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto hidden z-50">
+            <!-- Suggestions will be rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Color Filter -->
+      <div id="selectedColorFilter" class="hidden items-center gap-2 bg-primary-50 px-3 py-2 rounded-xl border border-primary-200">
+        <div id="selectedColorSwatch" class="w-5 h-5 rounded-full border border-gray-200"></div>
+        <span id="selectedColorName" class="text-sm font-medium text-gray-700"></span>
+        <button id="clearColorFilter" class="p-1 hover:bg-primary-100 rounded-full transition-colors">
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Palette Size Filter -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-semibold text-gray-700">Size:</span>
+        <button class="size-filter px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-primary-600 text-white" data-size="all">All</button>
+        <button class="size-filter px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-size="3">3</button>
+        <button class="size-filter px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-size="4">4</button>
+        <button class="size-filter px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-size="5">5</button>
+        <button class="size-filter px-3 py-1.5 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-size="6">6</button>
+      </div>
+
+      <!-- Results count -->
+      <div class="text-sm text-gray-500 whitespace-nowrap">
+        <span id="resultsCount">Loading...</span> palettes
+      </div>
+    </div>
+  </div>
+
+  <!-- Themes Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="themesGrid">
+    <!-- Themes will be rendered here -->
+  </div>
+
+  <!-- Load More -->
+  <div class="text-center mt-8">
+    <button id="loadMoreBtn" class="px-8 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl shadow-md hover:shadow-lg transition-all">
+      Load More Palettes
+    </button>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" class="hidden text-center py-16">
+    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+    </svg>
+    <p class="text-gray-500 text-lg">No palettes match your filters</p>
+    <button onclick="resetFilters()" class="mt-4 text-primary-600 hover:text-primary-700 font-medium">Reset filters</button>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-all translate-y-4 pointer-events-none z-50" id="toast">
+  Copied to clipboard!
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let allThemes = [];
+  let filteredThemes = [];
+  let displayedCount = 0;
+  const THEMES_PER_PAGE = 30;
+
+  let currentSizeFilter = 'all';
+  let currentSearch = '';
+  let selectedColor = null;
+  let allColors = [];
+
+  // Load themes data
+  async function loadThemes() {
+    try {
+      const response = await fetch('/generated_themes.json');
+      const data = await response.json();
+      allThemes = data.themes;
+      filteredThemes = [...allThemes];
+      updateResultsCount();
+      extractUniqueColors();
+      renderThemes();
+    } catch (error) {
+      console.error('Error loading themes:', error);
+      document.getElementById('themesGrid').innerHTML = `
+        <div class="col-span-full text-center py-16 text-red-500">
+          Error loading themes. Please try refreshing the page.
+        </div>
+      `;
+    }
+  }
+
+  // Filter themes based on current criteria
+  function filterThemes() {
+    filteredThemes = allThemes.filter(theme => {
+      // Size filter
+      if (currentSizeFilter !== 'all' && theme.palette_size !== parseInt(currentSizeFilter)) {
+        return false;
+      }
+
+      // Selected color filter (match in any position)
+      if (selectedColor) {
+        const hasColor = theme.colors.some(c => c.name === selectedColor.name);
+        if (!hasColor) return false;
+      }
+
+      // Search filter (fuzzy matching)
+      if (currentSearch) {
+        const searchLower = currentSearch.toLowerCase();
+        const themeNameMatch = theme.theme_name && theme.theme_name.toLowerCase().includes(searchLower);
+        const seedMatch = theme.seed_color.toLowerCase().includes(searchLower);
+        const codeMatch = theme.seed_code.toLowerCase().includes(searchLower);
+        const hexMatch = theme.seed_hex.toLowerCase().includes(searchLower);
+        const colorMatch = theme.colors.some(c =>
+          c.name.toLowerCase().includes(searchLower) ||
+          c.code.toLowerCase().includes(searchLower)
+        );
+        if (!themeNameMatch && !seedMatch && !codeMatch && !hexMatch && !colorMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    displayedCount = 0;
+    updateResultsCount();
+    renderThemes();
+  }
+
+  // Extract unique colors from themes for the picker
+  function extractUniqueColors() {
+    const colorMap = new Map();
+    for (const theme of allThemes) {
+      if (!colorMap.has(theme.seed_color)) {
+        colorMap.set(theme.seed_color, {
+          name: theme.seed_color,
+          code: theme.seed_code,
+          hex: theme.seed_hex
+        });
+      }
+    }
+    allColors = Array.from(colorMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Render color suggestions dropdown
+  function renderColorSuggestions(query) {
+    const dropdown = document.getElementById('colorSuggestions');
+
+    if (!query) {
+      dropdown.classList.add('hidden');
+      return;
+    }
+
+    const queryLower = query.toLowerCase();
+    const filtered = allColors.filter(c =>
+      c.name.toLowerCase().includes(queryLower) ||
+      c.code.toLowerCase().includes(queryLower)
+    ).slice(0, 10); // Limit to 10 suggestions
+
+    if (filtered.length === 0) {
+      dropdown.classList.add('hidden');
+      return;
+    }
+
+    dropdown.innerHTML = filtered.map(color => `
+      <div class="color-suggestion-item flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+           data-name="${color.name}"
+           data-code="${color.code}"
+           data-hex="${color.hex}">
+        <div class="w-8 h-8 rounded-lg border border-gray-200 shadow-sm" style="background: ${color.hex}"></div>
+        <div class="flex-1">
+          <div class="text-sm font-medium text-gray-800">${color.name}</div>
+          <div class="text-xs text-gray-500">${color.code} · ${color.hex}</div>
+        </div>
+      </div>
+    `).join('');
+
+    dropdown.classList.remove('hidden');
+
+    // Add click handlers
+    dropdown.querySelectorAll('.color-suggestion-item').forEach(item => {
+      item.addEventListener('click', () => {
+        selectColor({
+          name: item.dataset.name,
+          code: item.dataset.code,
+          hex: item.dataset.hex
+        });
+      });
+    });
+  }
+
+  // Select a specific color
+  function selectColor(color) {
+    selectedColor = color;
+    currentSearch = '';
+    document.getElementById('seedSearch').value = '';
+    document.getElementById('colorSuggestions').classList.add('hidden');
+
+    // Show selected color filter pill
+    const filterPill = document.getElementById('selectedColorFilter');
+    document.getElementById('selectedColorSwatch').style.backgroundColor = color.hex;
+    document.getElementById('selectedColorName').textContent = color.name;
+    filterPill.classList.remove('hidden');
+    filterPill.classList.add('flex');
+
+    filterThemes();
+  }
+
+  // Clear selected color filter
+  function clearColorFilter() {
+    selectedColor = null;
+    document.getElementById('selectedColorFilter').classList.add('hidden');
+    document.getElementById('selectedColorFilter').classList.remove('flex');
+    filterThemes();
+  }
+
+  // Update results count display
+  function updateResultsCount() {
+    document.getElementById('resultsCount').textContent = filteredThemes.length.toLocaleString();
+  }
+
+  // Render themes grid
+  function renderThemes() {
+    const grid = document.getElementById('themesGrid');
+    const emptyState = document.getElementById('emptyState');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    if (filteredThemes.length === 0) {
+      grid.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      loadMoreBtn.classList.add('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+
+    const themesToShow = filteredThemes.slice(0, displayedCount + THEMES_PER_PAGE);
+    const isNewBatch = displayedCount === 0;
+
+    if (isNewBatch) {
+      grid.innerHTML = '';
+    }
+
+    themesToShow.slice(displayedCount).forEach(theme => {
+      const card = createThemeCard(theme);
+      grid.appendChild(card);
+    });
+
+    displayedCount = themesToShow.length;
+
+    // Show/hide load more button
+    if (displayedCount >= filteredThemes.length) {
+      loadMoreBtn.classList.add('hidden');
+    } else {
+      loadMoreBtn.classList.remove('hidden');
+    }
+  }
+
+  // Create a theme card element
+  function createThemeCard(theme) {
+    const div = document.createElement('div');
+    div.className = 'bg-white rounded-xl shadow-md overflow-hidden card-hover group cursor-pointer';
+
+    // Calculate bar segments
+    const barHeight = theme.palette_size >= 5 ? 'h-28' : theme.palette_size === 4 ? 'h-24' : 'h-20';
+
+    div.innerHTML = `
+      <!-- Color Bar -->
+      <div class="flex ${barHeight}">
+        ${theme.colors.map(color => `
+          <div class="flex-1 relative"
+               style="background: ${color.hex}"
+               title="${color.name} (${color.code})">
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
+              <span class="text-xs font-bold ${getTextColor(color.hex) === '#fff' ? 'text-white' : 'text-black'} drop-shadow-sm">
+                ${color.code}
+              </span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Info Bar -->
+      <div class="px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-full border-2 border-white shadow-sm" style="background: ${theme.seed_hex}"></div>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">${theme.theme_name || theme.seed_color + ' Mix'}</p>
+            <p class="text-xs text-gray-500">${theme.seed_color} · ${theme.palette_size} colors</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <a href="/palette-generator?colors=${theme.colors.map(c => encodeURIComponent(c.hex)).join(',')}"
+             class="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Open in Palette Generator">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
+            </svg>
+          </a>
+          <button class="copy-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Copy palette">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Copy functionality
+    const copyBtn = div.querySelector('.copy-btn');
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      copyPalette(theme);
+    });
+
+    div.addEventListener('click', () => copyPalette(theme));
+
+    return div;
+  }
+
+  // Copy palette to clipboard
+  async function copyPalette(theme) {
+    const names = theme.colors.map(c => c.name).join(', ');
+    const codes = theme.colors.map(c => c.code).join(', ');
+    const hexes = theme.colors.map(c => c.hex).join(', ');
+    const text = `${names}\n${codes}\n${hexes}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`Copied ${theme.palette_size} colors`);
+    } catch (err) {
+      showToast('Failed to copy');
+    }
+  }
+
+  // Show toast notification
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+    }, 2000);
+  }
+
+  // Reset all filters
+  function resetFilters() {
+    currentSizeFilter = 'all';
+    currentSearch = '';
+    selectedColor = null;
+    document.getElementById('seedSearch').value = '';
+    document.getElementById('colorSuggestions').classList.add('hidden');
+    document.getElementById('selectedColorFilter').classList.add('hidden');
+    document.getElementById('selectedColorFilter').classList.remove('flex');
+
+    document.querySelectorAll('.size-filter').forEach(btn => {
+      btn.classList.remove('bg-primary-600', 'text-white');
+      btn.classList.add('bg-gray-100', 'text-gray-600');
+      if (btn.dataset.size === 'all') {
+        btn.classList.remove('bg-gray-100', 'text-gray-600');
+        btn.classList.add('bg-primary-600', 'text-white');
+      }
+    });
+
+    filterThemes();
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    loadThemes();
+
+    // Size filter buttons
+    document.querySelectorAll('.size-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-filter').forEach(b => {
+          b.classList.remove('bg-primary-600', 'text-white');
+          b.classList.add('bg-gray-100', 'text-gray-600');
+        });
+        btn.classList.remove('bg-gray-100', 'text-gray-600');
+        btn.classList.add('bg-primary-600', 'text-white');
+        currentSizeFilter = btn.dataset.size;
+        filterThemes();
+      });
+    });
+
+    // Search input
+    const searchInput = document.getElementById('seedSearch');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const value = e.target.value.trim();
+      currentSearch = value;
+      renderColorSuggestions(value);
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#seedSearch') && !e.target.closest('#colorSuggestions')) {
+        document.getElementById('colorSuggestions').classList.add('hidden');
+      }
+    });
+
+    // Clear color filter button
+    document.getElementById('clearColorFilter').addEventListener('click', clearColorFilter);
+
+    // Load more button
+    document.getElementById('loadMoreBtn').addEventListener('click', () => {
+      renderThemes();
+    });
+
+    // Expose resetFilters to global scope for the empty state button
+    window.resetFilters = resetFilters;
+  });
+</script>
+{% endblock %}

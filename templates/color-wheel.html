@@ -1,0 +1,1031 @@
+{% extends "base.html" %}
+
+{% block title %}Color Wheel - Swatchy{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wheel-container {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 50%;
+  }
+
+  .wheel-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 400px;
+    transform-origin: center center;
+    transition: transform 0.2s ease-out;
+    cursor: grab;
+  }
+
+  .wheel-content.dragging {
+    cursor: grabbing;
+  }
+
+  .wheel-content.zoomed {
+    cursor: grab;
+  }
+
+  .wheel-background {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      hsl(0, 100%, 50%),
+      hsl(30, 100%, 50%),
+      hsl(60, 100%, 50%),
+      hsl(90, 100%, 50%),
+      hsl(120, 100%, 50%),
+      hsl(150, 100%, 50%),
+      hsl(180, 100%, 50%),
+      hsl(210, 100%, 50%),
+      hsl(240, 100%, 50%),
+      hsl(270, 100%, 50%),
+      hsl(300, 100%, 50%),
+      hsl(330, 100%, 50%),
+      hsl(360, 100%, 50%)
+    );
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .wheel-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+  }
+
+  .wheel-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 400px;
+  }
+
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zoom-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #4b5563;
+    transition: background 0.15s;
+  }
+
+  .zoom-btn:hover {
+    background: #e5e7eb;
+  }
+
+  .zoom-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pan-hint {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .pan-hint.visible {
+    opacity: 1;
+  }
+
+  .marker-group {
+    cursor: pointer;
+  }
+
+  .marker-dot {
+    transition: filter 0.15s;
+  }
+
+  .marker-dot.hover {
+    filter: brightness(1.15);
+  }
+
+  .marker-dot.selected {
+    stroke: white;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 6px rgba(0,0,0,0.5));
+  }
+
+  .harmony-line {
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+    pointer-events: none;
+  }
+
+  .tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+    display: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tooltip.visible {
+    display: block;
+  }
+
+  .color-block {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .color-block:hover {
+    transform: scale(1.05);
+  }
+
+  .marker-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 200;
+    display: none;
+    margin-top: 5px;
+  }
+
+  .marker-list.visible {
+    display: block;
+  }
+
+  .marker-list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .marker-list-item:last-child {
+    border-bottom: none;
+  }
+
+  .marker-list-item:hover,
+  .marker-list-item.highlighted {
+    background: #f9fafb;
+  }
+
+  .marker-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Color Wheel</h1>
+    <p class="text-gray-600">Click a marker dot to explore color harmonies</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6">
+    <!-- Line Filter -->
+    <div class="mb-4">
+      <span class="text-sm font-semibold text-gray-700 mr-3">Marker Line:</span>
+      <div class="inline-flex flex-wrap gap-2 mt-2 md:mt-0">
+        <button class="line-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-primary-600 text-white" data-line="all">All</button>
+        <button class="line-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-line="Honolulu">Honolulu</button>
+        <button class="line-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-line="Oahu">Oahu</button>
+        <button class="line-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-line="Kaala">Kaala</button>
+      </div>
+    </div>
+
+    <!-- Harmony Mode -->
+    <div class="mb-4">
+      <span class="text-sm font-semibold text-gray-700 mr-3">Harmony Mode:</span>
+      <div class="inline-flex flex-wrap gap-2 mt-2 md:mt-0">
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-primary-600 text-white" data-mode="complementary">Complementary</button>
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-mode="analogous">Analogous</button>
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-mode="triadic">Triadic</button>
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-mode="tetradic">Tetradic</button>
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-mode="splitComplementary">Split-Comp</button>
+        <button class="harmony-btn px-4 py-2 rounded-full text-sm font-medium transition-all bg-gray-100 text-gray-600 hover:bg-gray-200" data-mode="monochromatic">Monochromatic</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="relative max-w-md">
+      <span class="text-sm font-semibold text-gray-700 mr-3">Find Marker:</span>
+      <div class="relative inline-block w-full md:w-72 mt-2 md:mt-0">
+        <input type="text" id="markerSearch" placeholder="Search by name or code..."
+               class="w-full px-4 py-2 pl-10 rounded-xl border border-gray-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <div class="marker-list" id="markerList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Color Wheel -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <label class="text-sm font-semibold text-gray-700">Zoom:</label>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
+          <input type="range" id="zoomSlider" min="100" max="500" value="100" step="10"
+                 class="w-32 accent-primary-600">
+          <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
+          <span id="zoomLabel" class="text-sm text-gray-600 w-16 text-right">100%</span>
+        </div>
+      </div>
+      <div class="wheel-container" id="wheelContainer">
+        <div class="wheel-content" id="wheelContent">
+          <div class="wheel-background"></div>
+          <svg class="wheel-svg" id="wheelSvg" viewBox="0 0 400 400">
+            <g id="harmonyLines"></g>
+            <g id="markerDots"></g>
+          </svg>
+        </div>
+      </div>
+      <div class="pan-hint text-center" id="panHint">Click and drag to pan when zoomed</div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="space-y-6">
+      <!-- Selected Marker -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Selected Marker</h3>
+        <div id="selectedMarker">
+          <div class="h-24 rounded-xl bg-gray-200 flex items-center justify-center text-gray-500 mb-4" id="selectedPreview">
+            <span>Click a dot to select</span>
+          </div>
+          <div id="markerDetails" class="text-gray-600 text-sm">
+            <p>Select a marker from the wheel to see its details and color harmonies.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Harmony Palette -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Harmony Palette</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="harmonyPalette">
+          <!-- Harmony colors will be rendered here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="mt-6 bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-100">
+    <h4 class="font-semibold text-gray-800 mb-2">How to Use</h4>
+    <ul class="text-sm text-gray-600 space-y-1">
+      <li>• Click any marker dot on the wheel, or search by name/code to select a base color</li>
+      <li>• Choose a harmony mode to find complementary markers</li>
+      <li>• Filter by marker line to show only markers you own</li>
+      <li>• Click harmony palette colors to select them as the new base</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // State
+  let markersWithHSV = [];
+  let selectedMarker = null;
+  let currentLine = 'all';
+  let currentHarmonyMode = 'complementary';
+
+  // Zoom and pan state
+  let zoomLevel = 1.0;
+  let panX = 0;
+  let panY = 0;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragStartPanX = 0;
+  let dragStartPanY = 0;
+
+  // Harmony angle calculations
+  const harmonies = {
+    complementary: [0, 180],
+    analogous: [-30, 0, 30],
+    triadic: [0, 120, 240],
+    tetradic: [0, 90, 180, 270],
+    splitComplementary: [0, 150, 210],
+    monochromatic: [0]
+  };
+
+  // Convert HSV position to wheel coordinates
+  function hsvToWheelPosition(h, s, radius) {
+    const angle = (h - 90) * (Math.PI / 180);
+    const distance = (s / 100) * radius;
+    const x = 200 + Math.cos(angle) * distance;
+    const y = 200 + Math.sin(angle) * distance;
+    return { x, y };
+  }
+
+  // Calculate circular hue distance
+  function hueDistance(h1, h2) {
+    const diff = Math.abs(h1 - h2);
+    return Math.min(diff, 360 - diff);
+  }
+
+  // Find nearest marker to target hue
+  function findNearestMarker(targetHue, markers, exclude = []) {
+    let nearest = null;
+    let minDistance = Infinity;
+
+    for (const marker of markers) {
+      if (exclude.includes(marker.name)) continue;
+      const dist = hueDistance(marker.hsv.h, targetHue);
+      const satDiff = Math.abs(marker.hsv.s - 50) * 0.1;
+      const totalDist = dist + satDiff;
+
+      if (totalDist < minDistance) {
+        minDistance = totalDist;
+        nearest = marker;
+      }
+    }
+    return nearest;
+  }
+
+  // Find markers for monochromatic harmony
+  function findMonochromaticMarkers(baseMarker, markers, count = 3) {
+    const baseHue = baseMarker.hsv.h;
+    const results = [baseMarker];
+
+    const sameHueMarkers = markers
+      .filter(m => m.name !== baseMarker.name && hueDistance(m.hsv.h, baseHue) < 30)
+      .sort((a, b) => {
+        const aDiff = Math.abs(a.hsv.s - baseMarker.hsv.s) + Math.abs(a.hsv.v - baseMarker.hsv.v);
+        const bDiff = Math.abs(b.hsv.s - baseMarker.hsv.s) + Math.abs(b.hsv.v - baseMarker.hsv.v);
+        return bDiff - aDiff;
+      });
+
+    for (const marker of sameHueMarkers) {
+      if (results.length >= count) break;
+      const isDifferentEnough = results.every(r =>
+        Math.abs(r.hsv.s - marker.hsv.s) > 10 || Math.abs(r.hsv.v - marker.hsv.v) > 10
+      );
+      if (isDifferentEnough) results.push(marker);
+    }
+    return results;
+  }
+
+  // Generate harmony palette
+  function generateHarmonyPalette(anchor, mode) {
+    const visibleMarkers = getVisibleMarkers();
+
+    if (mode === 'monochromatic') {
+      return findMonochromaticMarkers(anchor, visibleMarkers, 5);
+    }
+
+    const angles = harmonies[mode];
+    const palette = [];
+    const excluded = [];
+
+    for (const angleOffset of angles) {
+      const targetHue = (anchor.hsv.h + angleOffset + 360) % 360;
+      const marker = findNearestMarker(targetHue, visibleMarkers, excluded);
+      if (marker) {
+        palette.push(marker);
+        excluded.push(marker.name);
+      }
+    }
+    return palette;
+  }
+
+  // Get markers visible with current filter
+  function getVisibleMarkers() {
+    if (currentLine === 'all') return markersWithHSV;
+    return markersWithHSV.filter(m => m.lines.includes(currentLine));
+  }
+
+  // Initialize markers with HSV
+  function initMarkers() {
+    markersWithHSV = markers.map(m => ({
+      ...m,
+      hsv: hexToHSV(m.hex)
+    }));
+    createMarkerDots();
+  }
+
+  // Create marker dots on wheel
+  function createMarkerDots() {
+    const dotsGroup = document.getElementById('markerDots');
+    const radius = 170;
+
+    dotsGroup.innerHTML = '';
+    const visibleMarkers = getVisibleMarkers();
+
+    for (const marker of visibleMarkers) {
+      const pos = hsvToWheelPosition(marker.hsv.h, marker.hsv.s, radius);
+      const opacity = 0.5 + (marker.hsv.v / 100) * 0.5;
+
+      // Create a group for the marker
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.setAttribute('class', 'marker-group');
+      group.style.cursor = 'pointer';
+
+      // Invisible hit area (larger for easier hovering)
+      const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hitArea.setAttribute('cx', pos.x);
+      hitArea.setAttribute('cy', pos.y);
+      hitArea.setAttribute('r', 15);
+      hitArea.setAttribute('fill', 'transparent');
+      hitArea.style.pointerEvents = 'all';
+
+      // Visible dot
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', pos.x);
+      circle.setAttribute('cy', pos.y);
+      circle.setAttribute('r', 8);
+      circle.setAttribute('fill', marker.hex);
+      circle.setAttribute('opacity', opacity);
+      circle.setAttribute('class', 'marker-dot');
+      circle.setAttribute('data-name', marker.name);
+      circle.style.pointerEvents = 'none';
+
+      // Event handlers on the group/hitArea
+      const handleEnter = (e) => {
+        circle.classList.add('hover');
+        showTooltip(e, marker);
+      };
+
+      const handleLeave = () => {
+        circle.classList.remove('hover');
+        hideTooltip();
+      };
+
+      group.addEventListener('click', () => selectMarker(marker));
+      group.addEventListener('mouseenter', handleEnter);
+      group.addEventListener('mousemove', updateTooltipPosition);
+      group.addEventListener('mouseleave', handleLeave);
+
+      group.appendChild(hitArea);
+      group.appendChild(circle);
+      dotsGroup.appendChild(group);
+    }
+
+    if (selectedMarker) {
+      const stillVisible = visibleMarkers.find(m => m.name === selectedMarker.name);
+      if (stillVisible) {
+        selectMarker(stillVisible);
+      } else {
+        clearSelection();
+      }
+    }
+  }
+
+  // Tooltip state
+  let tooltipTimeout = null;
+  let currentTooltipMarker = null;
+  let lastMouseEvent = null;
+
+  // Show tooltip
+  function showTooltip(event, marker) {
+    currentTooltipMarker = marker;
+    lastMouseEvent = event;
+
+    // Clear any existing timeout to prevent flickering
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+    }
+
+    tooltipTimeout = setTimeout(() => {
+      if (currentTooltipMarker !== marker) return;
+
+      const tooltip = document.getElementById('tooltip');
+      tooltip.textContent = `${marker.name} (${marker.code})`;
+
+      // Position below and to the right of cursor
+      const x = lastMouseEvent.clientX + 12;
+      const y = lastMouseEvent.clientY + 12;
+
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+      tooltip.classList.add('visible');
+    }, 100);
+  }
+
+  // Update tooltip position on mouse move
+  function updateTooltipPosition(event) {
+    if (!currentTooltipMarker) return;
+    lastMouseEvent = event;
+
+    const tooltip = document.getElementById('tooltip');
+    if (!tooltip.classList.contains('visible')) return;
+
+    const x = event.clientX + 12;
+    const y = event.clientY + 12;
+
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+  }
+
+  // Hide tooltip
+  function hideTooltip() {
+    currentTooltipMarker = null;
+
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = null;
+    }
+
+    document.getElementById('tooltip').classList.remove('visible');
+  }
+
+  // Select a marker
+  function selectMarker(marker) {
+    selectedMarker = marker;
+
+    document.querySelectorAll('.marker-dot').forEach(dot => {
+      const isSelected = dot.getAttribute('data-name') === marker.name;
+      dot.classList.toggle('selected', isSelected);
+      // Adjust radius for selected state
+      dot.setAttribute('r', isSelected ? 10 : 8);
+    });
+
+    const preview = document.getElementById('selectedPreview');
+    const brightness = calculateBrightness(marker.hex);
+    const textColor = brightness > 128 ? '#000' : '#fff';
+
+    preview.style.background = marker.hex;
+    preview.style.color = textColor;
+    preview.innerHTML = `<span class="font-semibold">${marker.name}</span>`;
+
+    const details = document.getElementById('markerDetails');
+    const honolulu = marker.data.Honolulu || '—';
+    const oahu = marker.data.Oahu || '—';
+    const kaala = marker.data.Kaala || '—';
+
+    details.innerHTML = `
+      <div class="bg-gray-50 rounded-lg p-3 mb-3 text-center">
+        <div class="text-2xl font-bold text-gray-800 font-mono">${marker.code}</div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-gray-50 rounded p-2">
+          <div class="text-gray-400 mb-1">Honolulu</div>
+          <div class="font-semibold">${honolulu}</div>
+        </div>
+        <div class="bg-gray-50 rounded p-2">
+          <div class="text-gray-400 mb-1">Oahu</div>
+          <div class="font-semibold">${oahu}</div>
+        </div>
+        <div class="bg-gray-50 rounded p-2">
+          <div class="text-gray-400 mb-1">Kaala</div>
+          <div class="font-semibold">${kaala}</div>
+        </div>
+      </div>
+      <div class="mt-3 text-center">
+        <span class="font-mono text-gray-500">${marker.hex}</span>
+      </div>
+    `;
+
+    renderHarmonyPalette();
+    drawHarmonyLines();
+  }
+
+  // Clear selection
+  function clearSelection() {
+    selectedMarker = null;
+    document.querySelectorAll('.marker-dot').forEach(dot => {
+      dot.classList.remove('selected');
+      dot.setAttribute('r', 8);
+    });
+
+    const preview = document.getElementById('selectedPreview');
+    preview.style.background = '#e5e7eb';
+    preview.style.color = '#6b7280';
+    preview.innerHTML = '<span>Click a dot to select</span>';
+
+    document.getElementById('markerDetails').innerHTML = '<p class="text-gray-500">Select a marker from the wheel to see its details and color harmonies.</p>';
+    document.getElementById('harmonyPalette').innerHTML = '';
+    document.getElementById('harmonyLines').innerHTML = '';
+  }
+
+  // Render harmony palette
+  function renderHarmonyPalette() {
+    if (!selectedMarker) return;
+
+    const palette = generateHarmonyPalette(selectedMarker, currentHarmonyMode);
+    const container = document.getElementById('harmonyPalette');
+
+    container.innerHTML = palette.map(marker => {
+      const brightness = calculateBrightness(marker.hex);
+      const textColor = brightness > 128 ? '#000' : '#fff';
+
+      return `
+        <div class="color-block" style="background: ${marker.hex}; color: ${textColor};"
+             onclick="selectMarkerByName('${marker.name}')">
+          <div class="text-center p-2">
+            <div class="font-semibold text-xs">${marker.name}</div>
+            <div class="text-xs opacity-80">${marker.code}</div>
+            <div class="text-xs opacity-70 font-mono mt-1">${marker.hex}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Draw harmony lines on wheel
+  function drawHarmonyLines() {
+    if (!selectedMarker) return;
+
+    const linesGroup = document.getElementById('harmonyLines');
+    const palette = generateHarmonyPalette(selectedMarker, currentHarmonyMode);
+    const radius = 170;
+
+    linesGroup.innerHTML = '';
+    if (palette.length < 2) return;
+
+    const centerX = 200;
+    const centerY = 200;
+
+    for (let i = 0; i < palette.length; i++) {
+      const pos1 = hsvToWheelPosition(palette[i].hsv.h, palette[i].hsv.s, radius);
+      const pos2 = hsvToWheelPosition(palette[(i + 1) % palette.length].hsv.h, palette[(i + 1) % palette.length].hsv.s, radius);
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', pos1.x);
+      line.setAttribute('y1', pos1.y);
+      line.setAttribute('x2', pos2.x);
+      line.setAttribute('y2', pos2.y);
+      line.setAttribute('class', 'harmony-line');
+      linesGroup.appendChild(line);
+    }
+  }
+
+  // Select marker by name
+  function selectMarkerByName(name) {
+    const marker = markersWithHSV.find(m => m.name === name);
+    if (marker) selectMarker(marker);
+  }
+
+  // Search functionality
+  let searchHighlightIndex = -1;
+  let filteredMarkers = [];
+
+  function filterMarkers(query) {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    const visibleMarkers = getVisibleMarkers();
+    return visibleMarkers.filter(marker =>
+      marker.name.toLowerCase().includes(q) ||
+      marker.code.toLowerCase().includes(q)
+    ).slice(0, 20);
+  }
+
+  function renderMarkerList(markers) {
+    const list = document.getElementById('markerList');
+
+    if (markers.length === 0) {
+      const query = document.getElementById('markerSearch').value.trim();
+      if (query) {
+        list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No markers found</div>';
+        list.classList.add('visible');
+      } else {
+        list.classList.remove('visible');
+      }
+      return;
+    }
+
+    list.innerHTML = markers.map((marker, index) => `
+      <div class="marker-list-item ${index === searchHighlightIndex ? 'highlighted' : ''}"
+           data-index="${index}" data-name="${marker.name}">
+        <div class="marker-swatch" style="background: ${marker.hex};"></div>
+        <div class="flex-1">
+          <div class="font-semibold text-sm text-gray-800">${marker.name}</div>
+          <div class="text-xs text-gray-500">${marker.code}</div>
+        </div>
+      </div>
+    `).join('');
+
+    list.classList.add('visible');
+  }
+
+  function hideMarkerList() {
+    document.getElementById('markerList').classList.remove('visible');
+    searchHighlightIndex = -1;
+  }
+
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadColorData();
+    initMarkers();
+
+    // Line filter buttons
+    document.querySelectorAll('.line-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.line-btn').forEach(b => {
+          b.classList.remove('bg-primary-600', 'text-white');
+          b.classList.add('bg-gray-100', 'text-gray-600');
+        });
+        btn.classList.remove('bg-gray-100', 'text-gray-600');
+        btn.classList.add('bg-primary-600', 'text-white');
+        currentLine = btn.dataset.line;
+        createMarkerDots();
+      });
+    });
+
+    // Harmony mode buttons
+    document.querySelectorAll('.harmony-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.harmony-btn').forEach(b => {
+          b.classList.remove('bg-primary-600', 'text-white');
+          b.classList.add('bg-gray-100', 'text-gray-600');
+        });
+        btn.classList.remove('bg-gray-100', 'text-gray-600');
+        btn.classList.add('bg-primary-600', 'text-white');
+        currentHarmonyMode = btn.dataset.mode;
+        if (selectedMarker) {
+          renderHarmonyPalette();
+          drawHarmonyLines();
+        }
+      });
+    });
+
+    // Marker search
+    const searchInput = document.getElementById('markerSearch');
+    const markerList = document.getElementById('markerList');
+
+    searchInput.addEventListener('input', (e) => {
+      searchHighlightIndex = -1;
+      filteredMarkers = filterMarkers(e.target.value);
+      renderMarkerList(filteredMarkers);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (!markerList.classList.contains('visible') || filteredMarkers.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        searchHighlightIndex = Math.min(searchHighlightIndex + 1, filteredMarkers.length - 1);
+        renderMarkerList(filteredMarkers);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        searchHighlightIndex = Math.max(searchHighlightIndex - 1, 0);
+        renderMarkerList(filteredMarkers);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (searchHighlightIndex >= 0 && searchHighlightIndex < filteredMarkers.length) {
+          selectMarker(filteredMarkers[searchHighlightIndex]);
+          searchInput.value = '';
+          hideMarkerList();
+        }
+      } else if (e.key === 'Escape') {
+        hideMarkerList();
+        searchInput.blur();
+      }
+    });
+
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim()) {
+        filteredMarkers = filterMarkers(searchInput.value);
+        renderMarkerList(filteredMarkers);
+      }
+    });
+
+    markerList.addEventListener('click', (e) => {
+      const item = e.target.closest('.marker-list-item');
+      if (item) {
+        const name = item.dataset.name;
+        const marker = markersWithHSV.find(m => m.name === name);
+        if (marker) {
+          selectMarker(marker);
+          searchInput.value = '';
+          hideMarkerList();
+        }
+      }
+    });
+
+    // Close list when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.relative')) {
+        hideMarkerList();
+      }
+    });
+
+    // Global mousemove for tooltip tracking
+    document.addEventListener('mousemove', updateTooltipPosition);
+
+    // Initialize zoom controls
+    initZoomControls();
+  });
+
+  // Zoom and Pan Functions
+  function initZoomControls() {
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomLabel = document.getElementById('zoomLabel');
+    const zoomIn = document.getElementById('zoomIn');
+    const zoomOut = document.getElementById('zoomOut');
+    const wheelContent = document.getElementById('wheelContent');
+    const wheelContainer = document.getElementById('wheelContainer');
+    const panHint = document.getElementById('panHint');
+
+    function updateZoom() {
+      zoomLevel = parseInt(zoomSlider.value) / 100;
+      zoomLabel.textContent = zoomSlider.value + '%';
+
+      // Show/hide pan hint
+      panHint.classList.toggle('visible', zoomLevel > 1);
+      wheelContent.classList.toggle('zoomed', zoomLevel > 1);
+
+      // Clamp pan values to keep wheel within bounds
+      clampPan();
+
+      // Apply transform
+      applyTransform();
+
+      // Update button states
+      zoomIn.disabled = zoomLevel >= 5;
+      zoomOut.disabled = zoomLevel <= 1;
+
+      // Counter-scale marker dots to keep them same visual size
+      updateMarkerDotScale();
+    }
+
+    function clampPan() {
+      if (zoomLevel <= 1) {
+        panX = 0;
+        panY = 0;
+        return;
+      }
+
+      const viewportSize = 400;
+      const maxOffset = (zoomLevel - 1) * viewportSize / 2 / zoomLevel;
+
+      panX = Math.max(-maxOffset, Math.min(maxOffset, panX));
+      panY = Math.max(-maxOffset, Math.min(maxOffset, panY));
+    }
+
+    function applyTransform() {
+      // Apply scale and translate transform
+      wheelContent.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    }
+
+    // Slider input
+    zoomSlider.addEventListener('input', updateZoom);
+
+    // Zoom buttons
+    zoomIn.addEventListener('click', () => {
+      const newValue = Math.min(500, parseInt(zoomSlider.value) + 50);
+      zoomSlider.value = newValue;
+      updateZoom();
+    });
+
+    zoomOut.addEventListener('click', () => {
+      const newValue = Math.max(100, parseInt(zoomSlider.value) - 50);
+      zoomSlider.value = newValue;
+      updateZoom();
+    });
+
+    // Pan with mouse drag
+    wheelContainer.addEventListener('mousedown', (e) => {
+      if (zoomLevel <= 1) return;
+
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartPanX = panX;
+      dragStartPanY = panY;
+      wheelContent.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      const deltaX = (e.clientX - dragStartX) / zoomLevel;
+      const deltaY = (e.clientY - dragStartY) / zoomLevel;
+
+      panX = dragStartPanX + deltaX;
+      panY = dragStartPanY + deltaY;
+
+      clampPan();
+      applyTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        wheelContent.classList.remove('dragging');
+      }
+    });
+
+    // Click to center (when zoomed)
+    wheelContainer.addEventListener('click', (e) => {
+      if (isDragging || zoomLevel <= 1) return;
+
+      // Don't center if clicking on a marker
+      if (e.target.closest('.marker-group')) return;
+
+      const rect = wheelContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const clickX = e.clientX - centerX;
+      const clickY = e.clientY - centerY;
+
+      // Adjust pan to center the clicked point
+      panX -= clickX / zoomLevel;
+      panY -= clickY / zoomLevel;
+
+      clampPan();
+      applyTransform();
+    });
+
+    // Mouse wheel to zoom
+    wheelContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+
+      const zoomStep = 10; // 10% per scroll tick
+      const currentValue = parseInt(zoomSlider.value);
+
+      if (e.deltaY < 0) {
+        // Scroll up = zoom in
+        zoomSlider.value = Math.min(500, currentValue + zoomStep);
+      } else {
+        // Scroll down = zoom out
+        zoomSlider.value = Math.max(100, currentValue - zoomStep);
+      }
+
+      updateZoom();
+    }, { passive: false });
+
+    // Counter-scale marker dots to keep them same visual size when zooming
+    function updateMarkerDotScale() {
+      const dots = document.querySelectorAll('.marker-dot');
+      const hitAreas = document.querySelectorAll('.marker-group circle[fill="transparent"]');
+      const counterScale = 1 / zoomLevel;
+
+      dots.forEach(dot => {
+        dot.style.transform = `scale(${counterScale})`;
+        dot.style.transformOrigin = 'center';
+        dot.style.transformBox = 'fill-box';
+      });
+
+      // Also counter-scale hit areas so they're easier to click
+      hitAreas.forEach(hitArea => {
+        hitArea.style.transform = `scale(${counterScale})`;
+        hitArea.style.transformOrigin = 'center';
+        hitArea.style.transformBox = 'fill-box';
+      });
+    }
+
+    // Initialize
+    updateZoom();
+  }
+</script>
+{% endblock %}

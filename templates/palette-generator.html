@@ -1,0 +1,636 @@
+{% extends "base.html" %}
+
+{% block title %}Palette Generator - Swatchy{% endblock %}
+
+{% block extra_css %}
+<style>
+  .color-column {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: flex 0.3s;
+  }
+
+  .color-column:hover .color-actions {
+    opacity: 1;
+  }
+
+  .locked-indicator {
+    position: absolute;
+    top: -54px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .locked-indicator:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .locked-indicator svg {
+    width: 28px;
+    height: 28px;
+    opacity: 0.7;
+  }
+
+  .locked-indicator .icon-unlocked {
+    display: none;
+  }
+
+  .locked-indicator:hover .icon-locked {
+    display: none;
+  }
+
+  .locked-indicator:hover .icon-unlocked {
+    display: block;
+  }
+
+    .color-actions {
+    position: absolute;
+    bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  @media (max-width: 768px) {
+    .color-actions {
+      opacity: 1;
+      position: relative;
+      bottom: auto;
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: 8px;
+    }
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(5px);
+  }
+
+  .action-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+  }
+
+  .action-btn.locked {
+    background: rgba(255,255,255,0.4);
+  }
+
+  .action-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .color-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+  }
+
+  .color-picker-overlay.visible {
+    display: flex;
+  }
+
+  .picker-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+
+  .picker-item:hover {
+    background: #f3f4f6;
+  }
+
+  .picker-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1f2937;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+  }
+
+  .toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-140px)] flex flex-col">
+  <!-- Header Controls -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Palette Generator</h1>
+        <p class="text-sm text-gray-600">Generate random color palettes with locking support</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Palette Size -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Colors:</label>
+          <select id="paletteSize" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+
+        <!-- Line Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Line:</label>
+          <select id="lineFilter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+            <option value="all">All</option>
+            <option value="Honolulu">Honolulu</option>
+            <option value="Oahu">Oahu</option>
+            <option value="Kaala">Kaala</option>
+          </select>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="generateBtn" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Generate
+        </button>
+
+        <span class="hidden md:inline text-xs text-gray-400">or press Space</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Palette Display -->
+  <div class="flex-1 bg-white rounded-2xl shadow-lg overflow-hidden flex" id="paletteContainer">
+    <!-- Color columns will be rendered here -->
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">Copied!</div>
+
+<!-- Color Picker Modal -->
+<div class="color-picker-overlay" id="colorPickerOverlay">
+  <div class="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col shadow-2xl">
+    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="font-bold text-gray-800">Select Color</h3>
+      <button id="closePicker" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="p-4 border-b border-gray-100">
+      <div class="relative">
+        <input type="text" id="pickerSearch" placeholder="Search by name or code..."
+               class="w-full px-4 py-2 pl-10 rounded-lg border border-gray-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-2" id="pickerList">
+      <!-- Colors will be rendered here -->
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // State
+  let currentPalette = [];
+  let lockedIndices = new Set();
+
+  // Load color data and init
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadColorData();
+
+    // Check for colors in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const colorsParam = urlParams.get('colors');
+    if (colorsParam) {
+      loadColorsFromUrl(colorsParam);
+    } else {
+      generatePalette();
+    }
+
+    // Event listeners
+    document.getElementById('generateBtn').addEventListener('click', generatePalette);
+    document.getElementById('paletteSize').addEventListener('change', generatePalette);
+    document.getElementById('lineFilter').addEventListener('change', generatePalette);
+
+    // Spacebar to generate
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+        e.preventDefault();
+        generatePalette();
+      }
+    });
+
+    // Handle color column actions
+    document.getElementById('paletteContainer').addEventListener('click', (e) => {
+      const lockedIndicator = e.target.closest('.locked-indicator');
+      if (lockedIndicator) {
+        const column = lockedIndicator.closest('.color-column');
+        const index = parseInt(column.dataset.index);
+        toggleLock(index);
+        return;
+      }
+
+      const actionBtn = e.target.closest('.action-btn');
+      if (actionBtn) {
+        const column = actionBtn.closest('.color-column');
+        const index = parseInt(column.dataset.index);
+        const action = actionBtn.dataset.action;
+
+        if (action === 'lock') {
+          toggleLock(index);
+        } else if (action === 'copy') {
+          copyHex(index);
+        } else if (action === 'remove') {
+          removeColor(index);
+        } else if (action === 'select') {
+          openColorPicker(index);
+        }
+      }
+    });
+
+    // Color picker events
+    document.getElementById('closePicker').addEventListener('click', closeColorPicker);
+    document.getElementById('colorPickerOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'colorPickerOverlay') closeColorPicker();
+    });
+    document.getElementById('pickerSearch').addEventListener('input', (e) => renderPickerList(e.target.value));
+    document.getElementById('pickerList').addEventListener('click', (e) => {
+      const item = e.target.closest('.picker-item');
+      if (item) selectColorFromPicker(item.dataset.name);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeColorPicker();
+    });
+  });
+
+  // Get filtered markers
+  function getFilteredMarkers() {
+    const lineFilter = document.getElementById('lineFilter').value;
+    if (lineFilter === 'all') return markers;
+    return markers.filter(m => m.lines.includes(lineFilter));
+  }
+
+  // Load colors from URL parameter
+  function loadColorsFromUrl(colorsParam) {
+    const hexColors = colorsParam.split(',').map(h => decodeURIComponent(h.trim()));
+
+    // Find matching markers for each hex color
+    const matchedMarkers = hexColors.map(hex => {
+      // Try exact match first
+      let marker = markers.find(m => m.hex.toLowerCase() === hex.toLowerCase());
+      if (marker) return marker;
+
+      // Fall back to closest color match
+      return findClosestMarker(hex);
+    }).filter(Boolean);
+
+    if (matchedMarkers.length > 0) {
+      currentPalette = matchedMarkers;
+      lockedIndices.clear();
+      document.getElementById('paletteSize').value = currentPalette.length;
+      renderPalette();
+      showToast(`Loaded ${currentPalette.length} colors`);
+    } else {
+      generatePalette();
+    }
+  }
+
+  // Find closest marker by hex color
+  function findClosestMarker(targetHex) {
+    if (markers.length === 0) return null;
+
+    const target = hexToRgb(targetHex);
+    if (!target) return markers[0];
+
+    let closest = markers[0];
+    let minDistance = Infinity;
+
+    for (const marker of markers) {
+      const color = hexToRgb(marker.hex);
+      if (!color) continue;
+
+      const distance = Math.sqrt(
+        Math.pow(target.r - color.r, 2) +
+        Math.pow(target.g - color.g, 2) +
+        Math.pow(target.b - color.b, 2)
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = marker;
+      }
+    }
+
+    return closest;
+  }
+
+  // Convert hex to RGB
+  function hexToRgb(hex) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    if (hex.length !== 6) return null;
+
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+
+    return { r, g, b };
+  }
+
+  // Generate random palette
+  function generatePalette() {
+    const size = parseInt(document.getElementById('paletteSize').value);
+    const availableMarkers = getFilteredMarkers();
+
+    if (availableMarkers.length < size) {
+      showToast('Not enough markers available');
+      return;
+    }
+
+    const newPalette = new Array(size);
+    const keptLocked = new Set();
+
+    for (const idx of lockedIndices) {
+      if (idx < size && currentPalette[idx]) {
+        newPalette[idx] = currentPalette[idx];
+        keptLocked.add(idx);
+      }
+    }
+    lockedIndices = keptLocked;
+
+    const usedNames = new Set(newPalette.filter(m => m).map(m => m.name));
+    const unusedMarkers = availableMarkers.filter(m => !usedNames.has(m.name));
+
+    for (let i = 0; i < size; i++) {
+      if (!newPalette[i]) {
+        if (unusedMarkers.length === 0) break;
+        const randomIdx = Math.floor(Math.random() * unusedMarkers.length);
+        newPalette[i] = unusedMarkers.splice(randomIdx, 1)[0];
+      }
+    }
+
+    currentPalette = newPalette.filter(m => m);
+    renderPalette();
+  }
+
+  // Render palette
+  function renderPalette() {
+    const container = document.getElementById('paletteContainer');
+
+    container.innerHTML = currentPalette.map((marker, index) => {
+      const brightness = calculateBrightness(marker.hex);
+      const textColor = brightness > 128 ? '#000' : '#fff';
+      const isLocked = lockedIndices.has(index);
+      const lineText = marker.lines.join(' / ') || 'New only';
+
+      const lockedIndicator = isLocked ? `
+        <div class="locked-indicator" data-action="unlock" title="Click to unlock">
+          <svg class="icon-locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <svg class="icon-unlocked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+          </svg>
+        </div>` : '';
+
+      return `
+        <div class="color-column flex-1 ${isLocked ? 'locked' : ''}"
+             style="background: ${marker.hex}; color: ${textColor};"
+             data-index="${index}">
+          <div class="text-center relative pt-8">
+            ${lockedIndicator}
+            <div class="text-lg md:text-xl font-bold mb-1">${marker.name}</div>
+            <div class="text-2xl md:text-3xl font-bold font-mono mb-1">${marker.code}</div>
+            <div class="text-sm opacity-80 font-mono">${marker.hex}</div>
+            <div class="text-xs opacity-70 mt-1">${lineText}</div>
+          </div>
+          <div class="color-actions">
+            <button class="action-btn" data-action="select" title="Select Color">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </button>
+            <button class="action-btn ${isLocked ? 'locked' : ''}" data-action="lock" title="${isLocked ? 'Unlock' : 'Lock'}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ${isLocked
+                  ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+                  : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+                }
+              </svg>
+            </button>
+            <button class="action-btn" data-action="copy" title="Copy Hex">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="action-btn" data-action="remove" title="Remove">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Toggle lock
+  function toggleLock(index) {
+    if (lockedIndices.has(index)) {
+      lockedIndices.delete(index);
+    } else {
+      lockedIndices.add(index);
+    }
+    renderPalette();
+  }
+
+  // Copy hex to clipboard
+  async function copyHex(index) {
+    const marker = currentPalette[index];
+    if (marker) {
+      try {
+        await navigator.clipboard.writeText(marker.hex);
+        showToast(`Copied ${marker.hex}`);
+      } catch (err) {
+        showToast('Failed to copy');
+      }
+    }
+  }
+
+  // Remove color from palette
+  function removeColor(index) {
+    if (currentPalette.length <= 2) {
+      showToast('Minimum 2 colors required');
+      return;
+    }
+
+    currentPalette.splice(index, 1);
+    lockedIndices.delete(index);
+
+    const newLocked = new Set();
+    for (const idx of lockedIndices) {
+      if (idx > index) {
+        newLocked.add(idx - 1);
+      } else {
+        newLocked.add(idx);
+      }
+    }
+    lockedIndices = newLocked;
+
+    document.getElementById('paletteSize').value = currentPalette.length;
+    renderPalette();
+  }
+
+  // Show toast notification
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('visible');
+
+    setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 2000);
+  }
+
+  // Color picker state
+  let pickerTargetIndex = 0;
+
+  function openColorPicker(index) {
+    pickerTargetIndex = index;
+    const overlay = document.getElementById('colorPickerOverlay');
+    const searchInput = document.getElementById('pickerSearch');
+
+    overlay.classList.add('visible');
+    searchInput.value = '';
+    searchInput.focus();
+    renderPickerList('');
+  }
+
+  function closeColorPicker() {
+    document.getElementById('colorPickerOverlay').classList.remove('visible');
+  }
+
+  function renderPickerList(query) {
+    const list = document.getElementById('pickerList');
+    const availableMarkers = getFilteredMarkers();
+    const usedNames = new Set(currentPalette.map(m => m.name));
+
+    let filtered = availableMarkers;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      filtered = availableMarkers.filter(m =>
+        m.name.toLowerCase().includes(q) ||
+        m.code.toLowerCase().includes(q)
+      );
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="p-8 text-center text-gray-500">No markers found</div>';
+      return;
+    }
+
+    filtered.sort((a, b) => {
+      const aUsed = usedNames.has(a.name);
+      const bUsed = usedNames.has(b.name);
+      if (aUsed !== bUsed) return aUsed ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    });
+
+    list.innerHTML = filtered.map(marker => {
+      const isUsed = usedNames.has(marker.name);
+      const opacity = isUsed ? '0.5' : '1';
+
+      return `
+        <div class="picker-item" data-name="${marker.name}" style="opacity: ${opacity}">
+          <div class="picker-swatch" style="background: ${marker.hex};"></div>
+          <div class="flex-1">
+            <div class="font-semibold text-sm text-gray-800">${marker.name}</div>
+            <div class="text-xs text-gray-500">${marker.code} &bull; ${marker.hex}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function selectColorFromPicker(name) {
+    const marker = markers.find(m => m.name === name);
+    if (marker) {
+      currentPalette[pickerTargetIndex] = marker;
+      renderPalette();
+      closeColorPicker();
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,1357 @@
+{% extends "base.html" %}
+
+{% block title %}Image Picker - Swatchy{% endblock %}
+
+{% block extra_css %}
+<style>
+  .upload-zone {
+    border: 3px dashed #d1d5db;
+    transition: all 0.3s;
+  }
+
+  .upload-zone:hover,
+  .upload-zone.dragover {
+    border-color: #c026d3;
+    background: #fdf4ff;
+  }
+
+  .image-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  #imageCanvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    cursor: crosshair;
+  }
+
+  .picker-overlay {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0,0,0,0.1);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: none;
+    background-size: 200% 200%;
+  }
+
+  .picker-overlay::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  }
+
+  .palette-strip {
+    display: flex;
+    gap: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .palette-color {
+    flex: 1;
+    min-height: 120px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .palette-color:hover {
+    flex: 1.3;
+    z-index: 1;
+  }
+
+  .palette-color .color-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    opacity: 1;
+  }
+
+  .extracted-swatch {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .extracted-swatch:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .marker-match-card {
+    transition: all 0.2s;
+  }
+
+  .marker-match-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .action-btn {
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(192, 38, 211, 0.3);
+  }
+
+  .action-btn:active {
+    transform: translateY(0);
+  }
+
+  .color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  }
+
+  .fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Mode Toggle Styles */
+  .mode-toggle {
+    display: flex;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .mode-toggle button {
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    color: #6b7280;
+  }
+
+  .mode-toggle button.active {
+    background: white;
+    color: #c026d3;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .mode-toggle button:hover:not(.active) {
+    color: #374151;
+  }
+
+  /* Auto-palette controls */
+  .auto-controls {
+    background: #fdf4ff;
+    border: 1px solid #f5d0fe;
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+
+  .seed-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .seed-color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  }
+
+  .palette-size-select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+  }
+
+  .regenerate-btn {
+    padding: 6px 12px;
+    background: #c026d3;
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .regenerate-btn:hover {
+    background: #a21caf;
+  }
+
+  .regenerate-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+
+  /* Canvas seed marker */
+  .seed-marker {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border: 4px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.2);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+  }
+
+  .mode-hint {
+    font-size: 12px;
+    color: #c026d3;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Image Picker</h1>
+    <p class="text-gray-600">Extract colors from images and find matching Ohuhu markers</p>
+  </div>
+
+  <!-- Upload Zone -->
+  <div id="uploadSection" class="bg-white rounded-2xl shadow-lg p-8 mb-6">
+    <div id="uploadZone" class="upload-zone rounded-xl p-12 text-center cursor-pointer">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+        <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <p class="text-lg font-medium text-gray-800 mb-2">Drop an image here or click to upload</p>
+      <p class="text-sm text-gray-500">Supports JPG, PNG, GIF up to 10MB</p>
+      <input type="file" id="fileInput" class="hidden" accept="image/*">
+    </div>
+  </div>
+
+  <!-- Image Preview & Color Picker -->
+  <div id="pickerSection" class="hidden">
+    <!-- Toolbar -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button id="newImageBtn" class="action-btn px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          New Image
+        </button>
+
+        <!-- Mode Toggle -->
+        <div class="mode-toggle">
+          <button id="manualModeBtn" class="active" onclick="toggleMode('manual')">Manual</button>
+          <button id="autoModeBtn" onclick="toggleMode('auto')">Auto-Palette</button>
+        </div>
+      </div>
+      <div id="modeHint" class="text-sm text-gray-500 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+        </svg>
+        Click on image to pick colors
+      </div>
+    </div>
+
+    <!-- Auto-Palette Controls (hidden in manual mode) -->
+    <div id="autoControls" class="auto-controls mb-6 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="seed-indicator">
+            <span class="text-sm text-gray-600">Seed:</span>
+            <div id="seedColorDot" class="seed-color-dot" style="background: #e5e7eb;"></div>
+            <span id="seedColorHex" class="font-mono text-sm text-gray-800">None</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600">Size:</label>
+            <select id="paletteSizeSelect" class="palette-size-select" onchange="updatePaletteSize()">
+              <option value="3">3 colors</option>
+              <option value="4" selected>4 colors</option>
+              <option value="5">5 colors</option>
+              <option value="6">6 colors</option>
+              <option value="7">7 colors</option>
+              <option value="8">8 colors</option>
+            </select>
+          </div>
+        </div>
+        <button id="regenerateBtn" class="regenerate-btn" onclick="regeneratePalette()" disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Regenerate
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Image Canvas -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="text-center">
+            <div class="image-container" id="imageContainer">
+              <canvas id="imageCanvas"></canvas>
+              <div id="pickerOverlay" class="picker-overlay"></div>
+              <div id="seedMarker" class="seed-marker hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Picked Colors Panel -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="pickedColorsTitle" class="font-bold text-gray-800">Picked Colors</h3>
+            <span id="pickedCount" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">0</span>
+          </div>
+
+          <div id="pickedColorsList" class="space-y-3">
+            <p id="pickedColorsEmpty" class="text-gray-400 text-center py-8 text-sm">Click on the image to pick colors</p>
+          </div>
+
+          <div id="pickedActions" class="hidden mt-4 pt-4 border-t border-gray-100">
+            <button id="clearPickedBtn" class="w-full py-2 text-sm text-gray-500 hover:text-red-500 transition-colors">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-extracted Colors -->
+  <div id="extractedSection" class="hidden mt-6">
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="font-bold text-gray-800 text-lg">Dominant Colors</h3>
+          <p class="text-sm text-gray-500">Click any color to add it to your palette</p>
+        </div>
+        <button id="reextractBtn" class="action-btn px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm">
+          Extract Again
+        </button>
+      </div>
+
+      <div id="dominantColors" class="grid grid-cols-4 md:grid-cols-8 gap-4">
+        <!-- Extracted colors will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Palette Preview -->
+  <div id="palettePreviewSection" class="hidden mt-6">
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="font-bold text-gray-800 text-lg">Your Palette</h3>
+          <p class="text-sm text-gray-500">Preview of your selected colors</p>
+        </div>
+        <button id="copyPaletteBtn" class="action-btn px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy All
+        </button>
+      </div>
+
+      <div id="palettePreview" class="palette-strip">
+        <!-- Palette colors will appear here -->
+      </div>
+
+      <!-- Marker Matches -->
+      <div id="markerMatchesSection" class="mt-6 pt-6 border-t border-gray-100">
+        <h4 class="font-semibold text-gray-800 mb-4">Closest Ohuhu Marker Matches</h4>
+        <div id="markerMatches" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <!-- Marker matches will appear here -->
+        </div>
+      </div>
+
+      <!-- Marker Palette Preview -->
+      <div id="markerPaletteSection" class="mt-6 pt-6 border-t border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h4 class="font-semibold text-gray-800">Ohuhu Marker Palette</h4>
+            <p class="text-sm text-gray-500">The same palette using actual marker colors</p>
+          </div>
+          <button id="copyMarkerPaletteBtn" class="action-btn px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium text-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            Copy Markers
+          </button>
+        </div>
+        <div id="markerPalettePreview" class="palette-strip">
+          <!-- Marker palette colors will appear here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="mt-8 bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-100">
+    <h4 class="font-semibold text-gray-800 mb-4">How It Works</h4>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+          <span class="text-primary-600 font-bold text-sm">1</span>
+        </div>
+        <div>
+          <h5 class="font-medium text-gray-800">Upload Image</h5>
+          <p class="text-sm text-gray-600">Drag and drop or click to select an image from your device</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+          <span class="text-primary-600 font-bold text-sm">2</span>
+        </div>
+        <div>
+          <h5 class="font-medium text-gray-800">Pick Colors</h5>
+          <p class="text-sm text-gray-600">Click anywhere on the image to pick colors, or auto-extract dominant colors</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+          <span class="text-primary-600 font-bold text-sm">3</span>
+        </div>
+        <div>
+          <h5 class="font-medium text-gray-800">Find Markers</h5>
+          <p class="text-sm text-gray-600">We match your picked colors to the closest Ohuhu markers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-all translate-y-4 pointer-events-none z-50" id="toast">
+  Copied to clipboard!
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // State
+  let currentImage = null;
+  let canvas = null;
+  let ctx = null;
+  let pickedColors = [];
+  let extractedColors = [];
+
+  // Auto-palette state
+  let currentMode = 'manual'; // 'manual' or 'auto'
+  let seedColor = null;
+  let seedPosition = null;
+  let paletteSize = 4;
+  let generatedPalette = [];
+  let candidateColors = [];
+  let regenerationAttempts = 0;
+
+  // DOM Elements
+  const uploadSection = document.getElementById('uploadSection');
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const pickerSection = document.getElementById('pickerSection');
+  const extractedSection = document.getElementById('extractedSection');
+  const palettePreviewSection = document.getElementById('palettePreviewSection');
+  const imageCanvas = document.getElementById('imageCanvas');
+  const pickerOverlay = document.getElementById('pickerOverlay');
+  const pickedColorsList = document.getElementById('pickedColorsList');
+  const pickedCount = document.getElementById('pickedCount');
+  const pickedActions = document.getElementById('pickedActions');
+  const palettePreview = document.getElementById('palettePreview');
+  const autoControls = document.getElementById('autoControls');
+  const modeHint = document.getElementById('modeHint');
+  const seedColorDot = document.getElementById('seedColorDot');
+  const seedColorHex = document.getElementById('seedColorHex');
+  const regenerateBtn = document.getElementById('regenerateBtn');
+  const paletteSizeSelect = document.getElementById('paletteSizeSelect');
+  const seedMarker = document.getElementById('seedMarker');
+  const markerMatches = document.getElementById('markerMatches');
+  const markerPalettePreview = document.getElementById('markerPalettePreview');
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadColorData();
+    setupEventListeners();
+    loadDefaultImage();
+  });
+
+  // Load default mascot image
+  function loadDefaultImage() {
+    currentImage = new Image();
+    currentImage.onload = () => {
+      setupCanvas();
+      showPickerSection();
+      autoExtractColors();
+    };
+    currentImage.src = '/images/swatchy_mascot.jpeg';
+  }
+
+  function setupEventListeners() {
+    // Upload events
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    // Canvas click to pick
+    imageCanvas.addEventListener('click', handleCanvasClick);
+    imageCanvas.addEventListener('mousemove', handleCanvasHover);
+    imageCanvas.addEventListener('mouseleave', () => {
+      pickerOverlay.style.display = 'none';
+    });
+
+    // Buttons
+    document.getElementById('newImageBtn').addEventListener('click', resetImage);
+    document.getElementById('reextractBtn').addEventListener('click', autoExtractColors);
+    document.getElementById('clearPickedBtn').addEventListener('click', clearPickedColors);
+    document.getElementById('copyPaletteBtn').addEventListener('click', copyPaletteToClipboard);
+    document.getElementById('copyMarkerPaletteBtn').addEventListener('click', copyMarkerPaletteToClipboard);
+  }
+
+  // Handle file upload
+  function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File size must be less than 10MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentImage = new Image();
+      currentImage.onload = () => {
+        setupCanvas();
+        showPickerSection();
+        autoExtractColors();
+      };
+      currentImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Setup canvas with image
+  function setupCanvas() {
+    canvas = imageCanvas;
+    ctx = canvas.getContext('2d');
+
+    // Resize for performance (max 800px width)
+    const maxWidth = 800;
+    const scale = Math.min(1, maxWidth / currentImage.width);
+    canvas.width = currentImage.width * scale;
+    canvas.height = currentImage.height * scale;
+
+    ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+  }
+
+  // Show picker section
+  function showPickerSection() {
+    uploadSection.classList.add('hidden');
+    pickerSection.classList.remove('hidden');
+    pickerSection.classList.add('fade-in');
+  }
+
+  // Reset to upload new image
+  function resetImage() {
+    pickedColors = [];
+    extractedColors = [];
+    seedColor = null;
+    seedPosition = null;
+    generatedPalette = [];
+    candidateColors = [];
+    regenerationAttempts = 0;
+    renderPickedColors();
+    renderPalettePreview();
+    updateSeedDisplay();
+
+    pickerSection.classList.add('hidden');
+    extractedSection.classList.add('hidden');
+    palettePreviewSection.classList.add('hidden');
+    uploadSection.classList.remove('hidden');
+    uploadSection.classList.add('fade-in');
+
+    fileInput.value = '';
+  }
+
+  // Handle canvas click to pick color
+  function handleCanvasClick(e) {
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    const pixel = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+    if (currentMode === 'auto') {
+      // Auto-palette mode: set seed and generate palette
+      seedColor = {
+        r: pixel[0],
+        g: pixel[1],
+        b: pixel[2],
+        hex: hex,
+        hsv: rgbToHsv(pixel[0], pixel[1], pixel[2])
+      };
+      seedPosition = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      regenerationAttempts = 0;
+      updateSeedDisplay();
+      generateAutoPalette();
+      showToast(`Seed set: ${hex}`);
+    } else {
+      // Manual mode: add to picked colors
+      if (!pickedColors.find(c => c.hex === hex)) {
+        pickedColors.unshift({
+          r: pixel[0],
+          g: pixel[1],
+          b: pixel[2],
+          hex: hex,
+          id: Date.now()
+        });
+
+        renderPickedColors();
+        renderPalettePreview();
+        showToast(`Picked ${hex}`);
+      }
+    }
+  }
+
+  // Handle canvas hover for picker overlay
+  function handleCanvasHover(e) {
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Get color at position
+    const canvasX = x * (canvas.width / rect.width);
+    const canvasY = y * (canvas.height / rect.height);
+    const pixel = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data;
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+    // Show picker overlay
+    pickerOverlay.style.display = 'block';
+    pickerOverlay.style.left = x + 'px';
+    pickerOverlay.style.top = y + 'px';
+    pickerOverlay.style.background = hex;
+  }
+
+  // Auto extract dominant colors
+  function autoExtractColors() {
+    if (!ctx) return;
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+
+    // Sample pixels and group by color
+    const colorMap = new Map();
+    const sampleRate = 8; // Sample every 8th pixel for performance
+
+    for (let i = 0; i < pixels.length; i += 4 * sampleRate) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      const a = pixels[i + 3];
+
+      if (a < 128) continue; // Skip transparent pixels
+
+      // Skip very dark and very light colors
+      const brightness = (r + g + b) / 3;
+      if (brightness < 20 || brightness > 240) continue;
+
+      // Quantize colors (reduce precision for grouping)
+      const qr = Math.round(r / 24) * 24;
+      const qg = Math.round(g / 24) * 24;
+      const qb = Math.round(b / 24) * 24;
+
+      const key = `${qr},${qg},${qb}`;
+      colorMap.set(key, (colorMap.get(key) || 0) + 1);
+    }
+
+    // Get top colors
+    extractedColors = Array.from(colorMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([key, count]) => {
+        const [r, g, b] = key.split(',').map(Number);
+        return { r, g, b, hex: rgbToHex(r, g, b), count };
+      });
+
+    renderExtractedColors();
+    extractedSection.classList.remove('hidden');
+    extractedSection.classList.add('fade-in');
+  }
+
+  // Render extracted colors
+  function renderExtractedColors() {
+    const container = document.getElementById('dominantColors');
+
+    container.innerHTML = extractedColors.map((color, index) => `
+      <div class="text-center slide-in" style="animation-delay: ${index * 0.05}s">
+        <div class="extracted-swatch mx-auto mb-2"
+             style="background: ${color.hex}"
+             onclick="addExtractedColor('${color.hex}')"
+             title="Click to add to palette">
+        </div>
+        <div class="text-xs font-mono text-gray-600">${color.hex}</div>
+      </div>
+    `).join('');
+  }
+
+  // Add extracted color to picked colors
+  window.addExtractedColor = function(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    if (!pickedColors.find(c => c.hex === hex)) {
+      pickedColors.unshift({ r, g, b, hex, id: Date.now() });
+      renderPickedColors();
+      renderPalettePreview();
+      showToast(`Added ${hex}`);
+    }
+  };
+
+  // Render picked colors list
+  function renderPickedColors() {
+    pickedCount.textContent = pickedColors.length;
+
+    if (pickedColors.length === 0) {
+      pickedColorsList.innerHTML = '<p class="text-gray-400 text-center py-8 text-sm">Click on the image to pick colors</p>';
+      pickedActions.classList.add('hidden');
+      return;
+    }
+
+    pickedActions.classList.remove('hidden');
+
+    pickedColorsList.innerHTML = pickedColors.map((color, index) => {
+      const textColor = calculateBrightness(color.hex) > 128 ? '#000' : '#fff';
+      const closestMarker = findClosestMarker(color.hex);
+
+      return `
+        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl slide-in" style="animation-delay: ${index * 0.03}s">
+          <div class="w-12 h-12 rounded-lg shadow-md flex-shrink-0 cursor-pointer"
+               style="background: ${color.hex}"
+               onclick="copyToClipboard('${color.hex}')"
+               title="Click to copy ${color.hex}">
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-mono text-sm text-gray-700 font-medium">${color.hex}</div>
+            <div class="text-xs text-gray-400">${closestMarker ? closestMarker.code : 'No match'}</div>
+          </div>
+          <button onclick="removePickedColor(${color.id})" class="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Remove">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Remove picked color
+  window.removePickedColor = function(id) {
+    pickedColors = pickedColors.filter(c => c.id !== id);
+    renderPickedColors();
+    renderPalettePreview();
+  };
+
+  // Clear all picked colors
+  function clearPickedColors() {
+    pickedColors = [];
+    renderPickedColors();
+    renderPalettePreview();
+  }
+
+  // Render palette preview
+  function renderPalettePreview() {
+    if (pickedColors.length === 0) {
+      palettePreviewSection.classList.add('hidden');
+      return;
+    }
+
+    palettePreviewSection.classList.remove('hidden');
+    palettePreviewSection.classList.add('fade-in');
+
+    palettePreview.innerHTML = pickedColors.map(color => {
+      const textColor = calculateBrightness(color.hex) > 128 ? '#fff' : '#fff';
+      return `
+        <div class="palette-color" style="background: ${color.hex}"
+             onclick="copyToClipboard('${color.hex}')"
+             title="Click to copy ${color.hex}">
+          <div class="color-info">
+            <div class="text-white font-mono text-sm font-medium">${color.hex}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    renderMarkerMatches();
+    renderMarkerPalette();
+  }
+
+  // Render marker palette
+  function renderMarkerPalette() {
+    const markerColors = pickedColors.map(color => findClosestMarker(color.hex)).filter(m => m !== null);
+
+    if (markerColors.length === 0) {
+      markerPalettePreview.innerHTML = '';
+      return;
+    }
+
+    markerPalettePreview.innerHTML = markerColors.map(marker => `
+      <div class="palette-color" style="background: ${marker.hex}"
+           onclick="copyToClipboard('${marker.hex}')"
+           title="${marker.name} (${marker.code}) - Click to copy ${marker.hex}">
+        <div class="color-info">
+          <div class="text-white font-mono text-sm font-medium">${marker.name}</div>
+          <div class="text-white/80 text-xs">${marker.code}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Copy marker palette to clipboard
+  function copyMarkerPaletteToClipboard() {
+    const markerColors = pickedColors.map(color => findClosestMarker(color.hex)).filter(m => m !== null);
+    const markerInfo = markerColors.map(m => `${m.name} (${m.code}): ${m.hex}`).join('\n');
+    copyToClipboard(markerInfo);
+  }
+
+  // Render marker matches
+  function renderMarkerMatches() {
+    markerMatches.innerHTML = pickedColors.slice(0, 10).map((color, index) => {
+      const closestMarker = findClosestMarker(color.hex);
+      if (!closestMarker) return '';
+
+      return `
+        <div class="marker-match-card bg-gray-50 rounded-xl p-3 flex items-center gap-3 slide-in" style="animation-delay: ${index * 0.05}s">
+          <div class="w-10 h-10 rounded-lg shadow-sm flex-shrink-0" style="background: ${closestMarker.hex}"></div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-medium text-gray-800 truncate">${closestMarker.name}</div>
+            <div class="text-xs text-gray-500">${closestMarker.code}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Find closest marker
+  function findClosestMarker(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    let closest = null;
+    let minDistance = Infinity;
+
+    for (const marker of markers) {
+      const mr = parseInt(marker.hex.slice(1, 3), 16);
+      const mg = parseInt(marker.hex.slice(3, 5), 16);
+      const mb = parseInt(marker.hex.slice(5, 7), 16);
+
+      // Weighted Euclidean distance (human eyes are more sensitive to green)
+      const distance = Math.sqrt(
+        Math.pow(r - mr, 2) * 0.299 +
+        Math.pow(g - mg, 2) * 0.587 +
+        Math.pow(b - mb, 2) * 0.114
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = marker;
+      }
+    }
+
+    return closest;
+  }
+
+  // Copy palette to clipboard
+  function copyPaletteToClipboard() {
+    const hexCodes = pickedColors.map(c => c.hex).join(', ');
+    copyToClipboard(hexCodes);
+  }
+
+  // Copy to clipboard
+  window.copyToClipboard = async function(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`Copied ${text}`);
+    } catch (err) {
+      showToast('Failed to copy');
+    }
+  };
+
+  // Convert RGB to Hex
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Show toast notification
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+    }, 2000);
+  }
+
+  // Toggle between manual and auto-palette modes
+  window.toggleMode = function(mode) {
+    currentMode = mode;
+
+    // Update toggle UI
+    document.getElementById('manualModeBtn').classList.toggle('active', mode === 'manual');
+    document.getElementById('autoModeBtn').classList.toggle('active', mode === 'auto');
+
+    // Show/hide auto controls
+    if (mode === 'auto') {
+      // Extract candidate colors first (before clearing UI) to avoid race condition
+      extractCandidateColors();
+
+      autoControls.classList.remove('hidden');
+      modeHint.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+        </svg>
+        <span class="mode-hint">Click image to set seed color for auto-palette</span>
+      `;
+
+      // Clear manual picks when switching to auto
+      pickedColors = [];
+      document.getElementById('pickedColorsTitle').textContent = 'Generated Palette';
+      document.getElementById('pickedColorsEmpty').textContent = 'Click on the image to set a seed color';
+      renderPickedColors();
+      renderPalettePreview();
+    } else {
+      autoControls.classList.add('hidden');
+      seedMarker.classList.add('hidden');
+      modeHint.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+        </svg>
+        Click on image to pick colors
+      `;
+
+      // Clear auto-palette state
+      seedColor = null;
+      seedPosition = null;
+      generatedPalette = [];
+      document.getElementById('pickedColorsTitle').textContent = 'Picked Colors';
+      document.getElementById('pickedColorsEmpty').textContent = 'Click on the image to pick colors';
+      updateSeedDisplay();
+      renderPalettePreview();
+    }
+  };
+
+  // Update palette size
+  window.updatePaletteSize = function() {
+    paletteSize = parseInt(paletteSizeSelect.value);
+    if (seedColor) {
+      generateAutoPalette();
+    }
+  };
+
+  // Update seed color display
+  function updateSeedDisplay() {
+    if (seedColor) {
+      seedColorDot.style.background = seedColor.hex;
+      seedColorHex.textContent = seedColor.hex;
+      regenerateBtn.disabled = false;
+
+      // Show seed marker on canvas
+      if (seedPosition) {
+        seedMarker.style.left = seedPosition.x + 'px';
+        seedMarker.style.top = seedPosition.y + 'px';
+        seedMarker.style.background = seedColor.hex;
+        seedMarker.classList.remove('hidden');
+      }
+    } else {
+      seedColorDot.style.background = '#e5e7eb';
+      seedColorHex.textContent = 'None';
+      regenerateBtn.disabled = true;
+      seedMarker.classList.add('hidden');
+    }
+  }
+
+  // Extract all candidate colors from image
+  function extractCandidateColors() {
+    if (!ctx) return;
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+
+    const colorMap = new Map();
+    const sampleRate = 4; // Sample every 4th pixel for good coverage
+
+    for (let i = 0; i < pixels.length; i += 4 * sampleRate) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      const a = pixels[i + 3];
+
+      if (a < 128) continue;
+
+      // Skip very dark and very light colors
+      const brightness = (r + g + b) / 3;
+      if (brightness < 15 || brightness > 245) continue;
+
+      // Quantize colors (reduce precision for grouping)
+      const qr = Math.round(r / 16) * 16;
+      const qg = Math.round(g / 16) * 16;
+      const qb = Math.round(b / 16) * 16;
+
+      const key = `${qr},${qg},${qb}`;
+      colorMap.set(key, (colorMap.get(key) || 0) + 1);
+    }
+
+    // Convert to array with HSV values
+    candidateColors = Array.from(colorMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100) // Keep top 100 colors
+      .map(([key, count]) => {
+        const [r, g, b] = key.split(',').map(Number);
+        return {
+          r, g, b,
+          hex: rgbToHex(r, g, b),
+          hsv: rgbToHsv(r, g, b),
+          count
+        };
+      });
+  }
+
+  // Generate auto-palette based on seed color
+  function generateAutoPalette() {
+    if (!seedColor) return;
+
+    // Ensure candidate colors are available
+    if (candidateColors.length === 0) {
+      extractCandidateColors();
+    }
+
+    if (candidateColors.length === 0) return;
+
+    const palette = [seedColor];
+    const usedColors = new Set([seedColor.hex]);
+
+    // Calculate target hues based on mixed harmony mode
+    const targetHues = calculateHarmonyHues(seedColor.hsv.h, 'mixed');
+
+    // Find best matching colors for each harmony position
+    for (const targetHue of targetHues) {
+      if (palette.length >= paletteSize) break;
+
+      const match = findBestHarmonyMatch(candidateColors, targetHue, usedColors, seedColor.hsv);
+      if (match) {
+        palette.push(match);
+        usedColors.add(match.hex);
+      }
+    }
+
+    // If we don't have enough colors, fill with diverse colors from candidates
+    if (palette.length < paletteSize) {
+      for (const candidate of candidateColors) {
+        if (palette.length >= paletteSize) break;
+        if (usedColors.has(candidate.hex)) continue;
+
+        // Check if color is distinct enough from existing palette
+        const isDistinct = palette.every(p => {
+          const hueDiff = Math.abs(p.hsv.h - candidate.hsv.h);
+          const hueDistance = Math.min(hueDiff, 360 - hueDiff);
+          return hueDistance > 15; // At least 15 degrees apart
+        });
+
+        if (isDistinct) {
+          palette.push(candidate);
+          usedColors.add(candidate.hex);
+        }
+      }
+    }
+
+    // If still not enough, just add more candidates
+    if (palette.length < paletteSize) {
+      for (const candidate of candidateColors) {
+        if (palette.length >= paletteSize) break;
+        if (!usedColors.has(candidate.hex)) {
+          palette.push(candidate);
+          usedColors.add(candidate.hex);
+        }
+      }
+    }
+
+    generatedPalette = palette.slice(0, paletteSize);
+
+    // Copy generated palette to pickedColors for display
+    pickedColors = generatedPalette.map((color, index) => ({
+      ...color,
+      id: Date.now() + index
+    }));
+
+    renderPickedColors();
+    renderPalettePreview();
+  }
+
+  // Regenerate palette with different variations
+  window.regeneratePalette = function() {
+    if (!seedColor) return;
+
+    regenerationAttempts++;
+
+    const palette = [seedColor];
+    const usedColors = new Set([seedColor.hex]);
+
+    // Alternate between different harmony modes
+    const modes = ['complementary', 'analogous', 'triadic', 'split-complementary', 'mixed'];
+    const mode = modes[regenerationAttempts % modes.length];
+
+    const targetHues = calculateHarmonyHues(seedColor.hsv.h, mode);
+
+    // Shuffle target hues for variety
+    const shuffledHues = targetHues.sort(() => Math.random() - 0.5);
+
+    for (const targetHue of shuffledHues) {
+      if (palette.length >= paletteSize) break;
+
+      // Add some randomness to hue matching
+      const hueVariation = (Math.random() - 0.5) * 30; // +/- 15 degrees
+      const adjustedHue = (targetHue + hueVariation + 360) % 360;
+
+      const match = findBestHarmonyMatch(candidateColors, adjustedHue, usedColors, seedColor.hsv, true);
+      if (match) {
+        palette.push(match);
+        usedColors.add(match.hex);
+      }
+    }
+
+    // Fill remaining slots
+    if (palette.length < paletteSize) {
+      const shuffled = candidateColors.sort(() => Math.random() - 0.5);
+      for (const candidate of shuffled) {
+        if (palette.length >= paletteSize) break;
+        if (usedColors.has(candidate.hex)) continue;
+
+        const isDistinct = palette.every(p => {
+          const hueDiff = Math.abs(p.hsv.h - candidate.hsv.h);
+          const hueDistance = Math.min(hueDiff, 360 - hueDiff);
+          return hueDistance > 10;
+        });
+
+        if (isDistinct || Math.random() > 0.5) {
+          palette.push(candidate);
+          usedColors.add(candidate.hex);
+        }
+      }
+    }
+
+    generatedPalette = palette.slice(0, paletteSize);
+
+    pickedColors = generatedPalette.map((color, index) => ({
+      ...color,
+      id: Date.now() + index
+    }));
+
+    renderPickedColors();
+    renderPalettePreview();
+    showToast('Palette regenerated');
+  };
+
+  // Calculate harmony hues based on mode
+  function calculateHarmonyHues(seedHue, mode) {
+    switch(mode) {
+      case 'complementary':
+        return [(seedHue + 180) % 360];
+      case 'analogous':
+        return [
+          (seedHue + 30) % 360,
+          (seedHue - 30 + 360) % 360,
+          (seedHue + 60) % 360,
+          (seedHue - 60 + 360) % 360
+        ];
+      case 'triadic':
+        return [
+          (seedHue + 120) % 360,
+          (seedHue + 240) % 360,
+          (seedHue + 120) % 360,
+          (seedHue + 240) % 360
+        ];
+      case 'split-complementary':
+        return [
+          (seedHue + 150) % 360,
+          (seedHue + 210) % 360,
+          (seedHue + 180) % 360
+        ];
+      case 'mixed':
+      default:
+        // Combine multiple harmony types for richer palettes
+        return [
+          (seedHue + 180) % 360,  // Complementary
+          (seedHue + 30) % 360,   // Analogous +
+          (seedHue - 30 + 360) % 360, // Analogous -
+          (seedHue + 120) % 360,  // Triadic 1
+          (seedHue + 240) % 360,  // Triadic 2
+          (seedHue + 150) % 360,  // Split-comp 1
+          (seedHue + 210) % 360   // Split-comp 2
+        ];
+    }
+  }
+
+  // Find best color match for target hue
+  function findBestHarmonyMatch(candidates, targetHue, usedColors, seedHsv, allowVariation = false) {
+    let bestMatch = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      if (usedColors.has(candidate.hex)) continue;
+
+      // Calculate hue distance (shortest path around color wheel)
+      let hueDiff = Math.abs(candidate.hsv.h - targetHue);
+      hueDiff = Math.min(hueDiff, 360 - hueDiff);
+
+      // Calculate saturation distance from seed
+      const satDiff = Math.abs(candidate.hsv.s - seedHsv.s);
+
+      // Calculate value distance from seed
+      const valDiff = Math.abs(candidate.hsv.v - seedHsv.v);
+
+      // Score: prefer close hue match, similar saturation, but some variation in value
+      let hueScore = Math.max(0, 100 - hueDiff);
+      if (allowVariation) {
+        hueScore = Math.max(0, 80 - hueDiff * 0.8);
+      }
+
+      const satScore = Math.max(0, 50 - satDiff * 100);
+      const valScore = Math.max(0, 30 - valDiff * 50);
+
+      // Bonus for distinct saturation levels
+      const distinctBonus = (candidate.hsv.s > 0.3 && candidate.hsv.s < 0.9) ? 20 : 0;
+
+      const score = hueScore + satScore * 0.5 + valScore * 0.3 + distinctBonus;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = candidate;
+      }
+    }
+
+    return bestMatch;
+  }
+
+  // Convert RGB to HSV
+  function rgbToHsv(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const diff = max - min;
+
+    let h = 0;
+    let s = max === 0 ? 0 : diff / max;
+    let v = max;
+
+    if (diff !== 0) {
+      switch (max) {
+        case r:
+          h = ((g - b) / diff + (g < b ? 6 : 0)) / 6;
+          break;
+        case g:
+          h = ((b - r) / diff + 2) / 6;
+          break;
+        case b:
+          h = ((r - g) / diff + 4) / 6;
+          break;
+      }
+    }
+
+    return {
+      h: h * 360,
+      s: s,
+      v: v
+    };
+  }
+</script>
+{% endblock %}
