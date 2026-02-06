@@ -275,6 +275,14 @@
     transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
 </style>
 {% endblock %}
 
@@ -408,6 +416,13 @@
       Copy All
     </button>
 
+    <button id="saveThemeBtn" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2" title="Save as theme">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+      </svg>
+      Save Theme
+    </button>
+
     <span class="hidden md:inline text-xs text-gray-400">or press Space</span>
   </div>
 
@@ -419,6 +434,51 @@
 
 <!-- Toast Notification -->
 <div class="toast" id="toast">Copied!</div>
+
+<!-- Save Theme Modal -->
+<div class="color-picker-overlay" id="saveThemeOverlay">
+  <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+    <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="font-bold text-gray-800">Save Theme</h3>
+      <button id="closeSaveTheme" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-sm font-medium text-gray-700">Theme Name</label>
+        <button id="aiGenerateName" class="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          AI Generate
+        </button>
+      </div>
+      <input type="text" id="themeNameInput" placeholder="Enter a name for your theme..."
+             class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
+
+      <!-- Preview of colors -->
+      <div class="mt-4">
+        <label class="block text-xs text-gray-500 mb-2">Colors</label>
+        <div class="flex gap-2" id="saveThemePreview">
+          <!-- Preview colors will be rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-gray-100 flex justify-end gap-3">
+      <button id="cancelSaveTheme" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors">
+        Cancel
+      </button>
+      <button id="confirmSaveTheme" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+        Save Theme
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Color Picker Modal -->
 <div class="color-picker-overlay" id="colorPickerOverlay">
@@ -518,6 +578,7 @@
     // Event listeners
     document.getElementById('generateBtn').addEventListener('click', generatePalette);
     document.getElementById('copyAllBtn').addEventListener('click', copyAllPaletteDetails);
+    document.getElementById('saveThemeBtn').addEventListener('click', saveTheme);
 
     // Spacebar to generate
     document.addEventListener('keydown', (e) => {
@@ -569,6 +630,19 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeColorPicker();
     });
+
+    // Save theme modal events
+    document.getElementById('closeSaveTheme').addEventListener('click', closeSaveThemeModal);
+    document.getElementById('cancelSaveTheme').addEventListener('click', closeSaveThemeModal);
+    document.getElementById('confirmSaveTheme').addEventListener('click', confirmSaveTheme);
+    document.getElementById('saveThemeOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'saveThemeOverlay') closeSaveThemeModal();
+    });
+    document.getElementById('themeNameInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') confirmSaveTheme();
+      if (e.key === 'Escape') closeSaveThemeModal();
+    });
+    document.getElementById('aiGenerateName').addEventListener('click', generateThemeNameWithAI);
   });
 
   // Tag filtering state
@@ -1044,6 +1118,133 @@
       showToast(`Copied ${currentPalette.length} colors`);
     } catch (err) {
       showToast('Failed to copy');
+    }
+  }
+
+  // Open save theme modal
+  function saveTheme() {
+    if (currentPalette.length === 0) {
+      showToast('No colors to save');
+      return;
+    }
+
+    const overlay = document.getElementById('saveThemeOverlay');
+    const input = document.getElementById('themeNameInput');
+    const preview = document.getElementById('saveThemePreview');
+
+    // Set default name
+    input.value = `Custom Palette ${new Date().toLocaleDateString()}`;
+
+    // Render color preview
+    preview.innerHTML = currentPalette.map(marker => `
+      <div class="w-12 h-12 rounded-lg shadow-sm border border-gray-200" style="background: ${marker.hex};" title="${marker.name}"></div>
+    `).join('');
+
+    overlay.classList.add('visible');
+    input.focus();
+    input.select();
+  }
+
+  // Close save theme modal
+  function closeSaveThemeModal() {
+    document.getElementById('saveThemeOverlay').classList.remove('visible');
+  }
+
+  // Actually save the theme with the entered name
+  async function confirmSaveTheme() {
+    const input = document.getElementById('themeNameInput');
+    const themeName = input.value.trim();
+
+    if (!themeName) {
+      showToast('Please enter a theme name');
+      input.focus();
+      return;
+    }
+
+    // Create theme object in the same format as generated_themes.json
+    const theme = {
+      theme_name: themeName,
+      palette_size: currentPalette.length,
+      seed_color: currentPalette[0]?.name || '',
+      seed_code: currentPalette[0]?.code || '',
+      seed_hex: currentPalette[0]?.hex || '',
+      colors: currentPalette.map(marker => ({
+        name: marker.name,
+        code: marker.code,
+        hex: marker.hex
+      }))
+    };
+
+    try {
+      const response = await fetch('/api/save-theme', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(theme)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showToast('Theme saved to library!');
+        closeSaveThemeModal();
+      } else {
+        showToast('Failed to save theme: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Failed to save theme');
+    }
+  }
+
+  // Generate theme name using AI
+  async function generateThemeNameWithAI() {
+    if (currentPalette.length === 0) {
+      showToast('No colors to generate name from');
+      return;
+    }
+
+    const btn = document.getElementById('aiGenerateName');
+    const input = document.getElementById('themeNameInput');
+
+    // Show loading state
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch('/api/generate-theme-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          colors: currentPalette.map(marker => ({
+            name: marker.name,
+            code: marker.code,
+            hex: marker.hex
+          }))
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        input.value = result.name;
+        input.focus();
+        input.select();
+        if (result.note) {
+          showToast(result.note);
+        }
+      } else {
+        showToast('Failed to generate name: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Failed to generate name');
+    } finally {
+      // Restore button state
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 

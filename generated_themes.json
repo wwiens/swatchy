@@ -1,6 +1,550 @@
 {
   "themes": [
     {
+      "theme_name": "Duskwood Cove",
+      "palette_size": 5,
+      "seed_color": "Vivid Violet",
+      "seed_code": "V112",
+      "seed_hex": "#aa6fac",
+      "colors": [
+        {
+          "name": "Vivid Violet",
+          "code": "V112",
+          "hex": "#aa6fac"
+        },
+        {
+          "name": "Cedar brown",
+          "code": "E415",
+          "hex": "#916e58"
+        },
+        {
+          "name": "Deep Turquoise",
+          "code": "BG312",
+          "hex": "#3dafa2"
+        },
+        {
+          "name": "Dahlia Pink",
+          "code": "RV19",
+          "hex": "#ef90b9"
+        },
+        {
+          "name": "Dark Charcoal",
+          "code": "WG37",
+          "hex": "#656162"
+        }
+      ]
+    },
+    {
+      "theme_name": "Saffron Mirage",
+      "palette_size": 5,
+      "seed_color": "Sunset Orange",
+      "seed_code": "YR17",
+      "seed_hex": "#f7bb8b",
+      "colors": [
+        {
+          "name": "Sunset Orange",
+          "code": "YR17",
+          "hex": "#f7bb8b"
+        },
+        {
+          "name": "Golden Brown",
+          "code": "Y416",
+          "hex": "#b0794b"
+        },
+        {
+          "name": "Lemon Chiffon",
+          "code": "Y02",
+          "hex": "#f6f1c0"
+        },
+        {
+          "name": "Tumbleweed",
+          "code": "E411",
+          "hex": "#ca976e"
+        },
+        {
+          "name": "Light Orange",
+          "code": "YR110",
+          "hex": "#eb9151"
+        }
+      ]
+    },
+    {
+      "theme_name": "Veldt Dusk",
+      "palette_size": 5,
+      "seed_color": "Vandyke Brown",
+      "seed_code": "E315",
+      "seed_hex": "#7c6b5c",
+      "colors": [
+        {
+          "name": "Vandyke Brown",
+          "code": "E315",
+          "hex": "#7c6b5c"
+        },
+        {
+          "name": "Sandbar Brown",
+          "code": "E311",
+          "hex": "#bda486"
+        },
+        {
+          "name": "Khaki Beige",
+          "code": "E14",
+          "hex": "#ddd3c0"
+        },
+        {
+          "name": "Taupe Brown",
+          "code": "E513",
+          "hex": "#837067"
+        },
+        {
+          "name": "Sweet Rosy Brown",
+          "code": "E712",
+          "hex": "#ab7372"
+        }
+      ]
+    },
+    {
+      "theme_name": "Maritime Cobalt Drift",
+      "palette_size": 5,
+      "seed_color": "Process Blue",
+      "seed_code": "B112",
+      "seed_hex": "#1e97c8",
+      "colors": [
+        {
+          "name": "Process Blue",
+          "code": "B112",
+          "hex": "#1e97c8"
+        },
+        {
+          "name": "Cerulean Blue",
+          "code": "B114",
+          "hex": "#1c7b9e"
+        },
+        {
+          "name": "Pool Blue",
+          "code": "B111",
+          "hex": "#1fa2d8"
+        },
+        {
+          "name": "Celadon Blue",
+          "code": "B015",
+          "hex": "#177ba8"
+        },
+        {
+          "name": "Classic Blue",
+          "code": "B115",
+          "hex": "#14629d"
+        }
+      ]
+    },
+    {
+      "theme_name": "Canyon Ember",
+      "palette_size": 5,
+      "seed_color": "Sunset Orange",
+      "seed_code": "YR17",
+      "seed_hex": "#f7bb8b",
+      "colors": [
+        {
+          "name": "Sunset Orange",
+          "code": "YR17",
+          "hex": "#f7bb8b"
+        },
+        {
+          "name": "Golden Brown",
+          "code": "Y416",
+          "hex": "#b0794b"
+        },
+        {
+          "name": "Coral Sand",
+          "code": "E46",
+          "hex": "#edbe97"
+        },
+        {
+          "name": "Tumbleweed",
+          "code": "E411",
+          "hex": "#ca976e"
+        },
+        {
+          "name": "Light Orange",
+          "code": "YR110",
+          "hex": "#eb9151"
+        }
+      ]
+    },
+    {
+      "theme_name": "Twilight Embers",
+      "palette_size": 5,
+      "seed_color": "Sandbar Brown",
+      "seed_code": "E311",
+      "seed_hex": "#bda486",
+      "colors": [
+        {
+          "name": "Sandbar Brown",
+          "code": "E311",
+          "hex": "#bda486"
+        },
+        {
+          "name": "Black Grape",
+          "code": "R615",
+          "hex": "#6c5c64"
+        },
+        {
+          "name": "Walnut Brown",
+          "code": "E913",
+          "hex": "#8e716b"
+        },
+        {
+          "name": "Bark Brown",
+          "code": "E914",
+          "hex": "#826560"
+        },
+        {
+          "name": "Burgundy Bark",
+          "code": "R613",
+          "hex": "#7d6164"
+        }
+      ]
+    },
+    {
+      "theme_name": "Terracotta Dusk",
+      "palette_size": 5,
+      "seed_color": "Red Bean",
+      "seed_code": "E713",
+      "seed_hex": "#9a5f5f",
+      "colors": [
+        {
+          "name": "Red Bean",
+          "code": "E713",
+          "hex": "#9a5f5f"
+        },
+        {
+          "name": "Sweet Rosy Brown",
+          "code": "E712",
+          "hex": "#ab7372"
+        },
+        {
+          "name": "Madder Brown",
+          "code": "E714",
+          "hex": "#8c5654"
+        },
+        {
+          "name": "Black Brown",
+          "code": "E515",
+          "hex": "#635552"
+        },
+        {
+          "name": "Bark Brown",
+          "code": "E914",
+          "hex": "#826560"
+        }
+      ]
+    },
+    {
+      "theme_name": "Sands of Cornucopia",
+      "palette_size": 5,
+      "seed_color": "Sand",
+      "seed_code": "Y610",
+      "seed_hex": "#ddc4a2",
+      "colors": [
+        {
+          "name": "Sand",
+          "code": "Y610",
+          "hex": "#ddc4a2"
+        },
+        {
+          "name": "Modern Grey",
+          "code": "E50",
+          "hex": "#eee0cd"
+        },
+        {
+          "name": "Warm Ivory",
+          "code": "Y42",
+          "hex": "#fae7cd"
+        },
+        {
+          "name": "Champagne Froth",
+          "code": "E23",
+          "hex": "#ece2c3"
+        },
+        {
+          "name": "Valentine Pink",
+          "code": "R26",
+          "hex": "#eda6bb"
+        }
+      ]
+    },
+    {
+      "theme_name": "Saharan Twilight",
+      "palette_size": 5,
+      "seed_color": "Light Salmon",
+      "seed_code": "R16",
+      "seed_hex": "#f8caca",
+      "colors": [
+        {
+          "name": "Light Salmon",
+          "code": "R16",
+          "hex": "#f8caca"
+        },
+        {
+          "name": "Sage Grey",
+          "code": "E17",
+          "hex": "#daceab"
+        },
+        {
+          "name": "Light Taupe",
+          "code": "E64",
+          "hex": "#d1b4a6"
+        },
+        {
+          "name": "Sand",
+          "code": "Y610",
+          "hex": "#ddc4a2"
+        },
+        {
+          "name": "Platinum Grey",
+          "code": "YGY17",
+          "hex": "#c4b9ae"
+        }
+      ]
+    },
+    {
+      "theme_name": "Blushing Sand Dunes",
+      "palette_size": 5,
+      "seed_color": "Rosy Grey",
+      "seed_code": "E93",
+      "seed_hex": "#ddc7bf",
+      "colors": [
+        {
+          "name": "Rosy Grey",
+          "code": "E93",
+          "hex": "#ddc7bf"
+        },
+        {
+          "name": "Pastel Yellow",
+          "code": "Y03",
+          "hex": "#f7f5c8"
+        },
+        {
+          "name": "Ash Rose",
+          "code": "E92",
+          "hex": "#e4d5cd"
+        },
+        {
+          "name": "Dried Sage",
+          "code": "E19",
+          "hex": "#d1c6aa"
+        },
+        {
+          "name": "Cotton Pearl",
+          "code": "YR05",
+          "hex": "#fae5d5"
+        }
+      ]
+    },
+    {
+      "theme_name": "Blushing Petals",
+      "palette_size": 5,
+      "seed_color": "Dull Pink",
+      "seed_code": "RV24",
+      "seed_hex": "#f3c3da",
+      "colors": [
+        {
+          "name": "Dull Pink",
+          "code": "RV24",
+          "hex": "#f3c3da"
+        },
+        {
+          "name": "Cameo Rose",
+          "code": "YR52",
+          "hex": "#fae7de"
+        },
+        {
+          "name": "Pewter Green",
+          "code": "E111",
+          "hex": "#bdad96"
+        },
+        {
+          "name": "Tender Pink",
+          "code": "R25",
+          "hex": "#f4b0c4"
+        },
+        {
+          "name": "Corn Silk",
+          "code": "Y52",
+          "hex": "#f9eed5"
+        }
+      ]
+    },
+    {
+      "theme_name": "Verdant Waters Whisper",
+      "palette_size": 5,
+      "seed_color": "Lake Green",
+      "seed_code": "BG313",
+      "seed_hex": "#30ad9f",
+      "colors": [
+        {
+          "name": "Lake Green",
+          "code": "BG313",
+          "hex": "#30ad9f"
+        },
+        {
+          "name": "Peacock Green",
+          "code": "BG314",
+          "hex": "#22918a"
+        },
+        {
+          "name": "Dark Emerald",
+          "code": "G315",
+          "hex": "#237e6d"
+        },
+        {
+          "name": "Dark Pine Green",
+          "code": "BG215",
+          "hex": "#25917b"
+        },
+        {
+          "name": "Bright Pine Green",
+          "code": "BG212",
+          "hex": "#34b393"
+        }
+      ]
+    },
+    {
+      "theme_name": "Whispers of Dawn",
+      "palette_size": 5,
+      "seed_color": "Eggnog yellow",
+      "seed_code": "Y34",
+      "seed_hex": "#fcf4df",
+      "colors": [
+        {
+          "name": "Eggnog yellow",
+          "code": "Y34",
+          "hex": "#fcf4df"
+        },
+        {
+          "name": "French Grey",
+          "code": "E30",
+          "hex": "#e3d7c5"
+        },
+        {
+          "name": "Pink Wisp",
+          "code": "RV23",
+          "hex": "#f9deeb"
+        },
+        {
+          "name": "Bog Mist Green",
+          "code": "E06",
+          "hex": "#dcd8c2"
+        },
+        {
+          "name": "Modern Grey",
+          "code": "E50",
+          "hex": "#eee0cd"
+        }
+      ]
+    },
+    {
+      "theme_name": "Blush Whisper Tides",
+      "palette_size": 5,
+      "seed_color": "Pale Rose",
+      "seed_code": "YR35",
+      "seed_hex": "#f8c4b2",
+      "colors": [
+        {
+          "name": "Pale Rose",
+          "code": "YR35",
+          "hex": "#f8c4b2"
+        },
+        {
+          "name": "Sandy Beige",
+          "code": "Y62",
+          "hex": "#f8ebda"
+        },
+        {
+          "name": "Pink Frost",
+          "code": "YR54",
+          "hex": "#fadcd2"
+        },
+        {
+          "name": "Dark Rose Grey",
+          "code": "E96",
+          "hex": "#ccada5"
+        },
+        {
+          "name": "Rose Quartz",
+          "code": "YR53",
+          "hex": "#fbdccf"
+        }
+      ]
+    },
+    {
+      "theme_name": "Cherry Cashew",
+      "palette_size": 5,
+      "seed_color": "Cherry Taupe",
+      "seed_code": "E85",
+      "seed_hex": "#e8c5c2",
+      "colors": [
+        {
+          "name": "Cherry Taupe",
+          "code": "E85",
+          "hex": "#e8c5c2"
+        },
+        {
+          "name": "Raw Cashew",
+          "code": "YR06",
+          "hex": "#f9dac3"
+        },
+        {
+          "name": "Champagne Froth",
+          "code": "E23",
+          "hex": "#ece2c3"
+        },
+        {
+          "name": "Pale Complexion",
+          "code": "YR44",
+          "hex": "#f4d4c7"
+        },
+        {
+          "name": "Sandy Beige",
+          "code": "Y62",
+          "hex": "#f8ebda"
+        }
+      ]
+    },
+    {
+      "theme_name": "Custom Palette 2/6/2026",
+      "palette_size": 5,
+      "seed_color": "Pink Sand",
+      "seed_code": "YR58",
+      "seed_hex": "#f8c5b7",
+      "colors": [
+        {
+          "name": "Pink Sand",
+          "code": "YR58",
+          "hex": "#f8c5b7"
+        },
+        {
+          "name": "Rosy Grey",
+          "code": "E93",
+          "hex": "#ddc7bf"
+        },
+        {
+          "name": "Rose Dust",
+          "code": "R57",
+          "hex": "#c68b9f"
+        },
+        {
+          "name": "Platinum Grey",
+          "code": "YGY17",
+          "hex": "#c4b9ae"
+        },
+        {
+          "name": "Lavender Fog",
+          "code": "R54",
+          "hex": "#e5cad4"
+        }
+      ]
+    },
+    {
       "seed_color": "Ice",
       "seed_code": "B00",
       "seed_hex": "#cbeaf2",
