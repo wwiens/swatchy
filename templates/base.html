@@ -6,34 +6,7 @@
   <meta name="description" content="Swatchy - A suite of color tools for Ohuhu markers">
   <title>{% block title %}Swatchy{% endblock %}</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#fdf4ff',
-              100: '#fae8ff',
-              200: '#f5d0fe',
-              300: '#f0abfc',
-              400: '#e879f9',
-              500: '#d946ef',
-              600: '#c026d3',
-              700: '#a21caf',
-              800: '#86198f',
-              900: '#701a75',
-            },
-            coral: {
-              400: '#fb7185',
-              500: '#f43f5e',
-              600: '#e11d48',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap');
     body { font-family: 'Poppins', sans-serif; }
@@ -155,6 +128,116 @@
       return calculateBrightness(hex) > 128 ? '#000' : '#fff';
     }
 
+    // Generate tags for a marker based on HSV values
+    function generateTags(marker) {
+      const tags = [];
+      const { h, s, v } = marker.hsv;
+
+      // Normalize s and v to 0-1 range for easier comparison
+      const sat = s / 100;
+      const val = v / 100;
+
+      // Temperature (from hue and saturation)
+      if (sat < 0.1) {
+        tags.push('neutral');
+      } else if (h >= 330 || h < 60) {
+        tags.push('warm');
+      } else if (h >= 60 && h < 300) {
+        tags.push('cool');
+      }
+
+      // Saturation levels
+      if (sat < 0.3) {
+        tags.push('muted');
+      } else if (sat > 0.7) {
+        tags.push('vibrant');
+      } else {
+        tags.push('bright');
+      }
+
+      // Value/Brightness levels
+      if (val > 0.7) {
+        tags.push('light');
+      } else if (val < 0.3) {
+        tags.push('dark');
+      } else {
+        tags.push('medium');
+      }
+
+      // Base hue categories
+      if (sat >= 0.1) {
+        if (h >= 330 || h < 30) tags.push('red');
+        else if (h >= 30 && h < 50) tags.push('orange');
+        else if (h >= 50 && h < 70) tags.push('yellow');
+        else if (h >= 70 && h < 150) tags.push('green');
+        else if (h >= 150 && h < 200) tags.push('cyan');
+        else if (h >= 200 && h < 260) tags.push('blue');
+        else if (h >= 260 && h < 300) tags.push('purple');
+        else if (h >= 300 && h < 330) tags.push('pink');
+      }
+
+      // Special tags based on color name patterns
+      const nameLower = marker.name.toLowerCase();
+
+      // Skin tones - peach to deep brown range
+      const skinToneNames = [
+        'barely blush', 'pastel blush', 'peachy blush', 'peach cobbler',
+        'warm beige', 'eggshell brown', 'unbleached titanium', 'orange sorbet',
+        'sandy beige', 'twine beige', 'termite beige', 'honey brown',
+        'tumbleweed', 'fawn brown', 'light earth brown', 'burnt ochre',
+        'cinnamon', 'potato brown', 'tropical peach', 'burnt sienna',
+        'golden brown', 'cedar brown', 'dark brown', 'russet brown',
+        'brick brown', 'reddish brown', 'copper brown'
+      ];
+      if (skinToneNames.some(n => nameLower.includes(n))) {
+        tags.push('skin-tone');
+      }
+
+      // Earth tones - browns, tans, ochres, olives
+      const earthToneNames = [
+        'bog mist green', 'khaki beige', 'sandbar brown', 'vandyke brown',
+        'taupe brown', 'black brown', 'bark brown', 'dark bark brown',
+        'madder brown', 'walnut brown', 'red bean', 'sweet rosy brown',
+        'burgundy bark', 'black grape'
+      ];
+      if (earthToneNames.some(n => nameLower.includes(n))) {
+        tags.push('earth-tone');
+      }
+
+      // Grayscale
+      if (sat < 0.15) {
+        tags.push('grayscale');
+      }
+
+      // Pastel (light + muted/bright)
+      if (val > 0.7 && sat < 0.5) {
+        tags.push('pastel');
+      }
+
+      return tags;
+    }
+
+    // Get markers filtered by tags (AND logic - all tags must match)
+    function getMarkersByTags(requiredTags) {
+      if (!requiredTags || requiredTags.length === 0) return markers;
+      return markers.filter(m =>
+        requiredTags.every(tag => m.tags && m.tags.includes(tag))
+      );
+    }
+
+    // Get all available tags with counts
+    function getTagCounts() {
+      const counts = {};
+      markers.forEach(m => {
+        if (m.tags) {
+          m.tags.forEach(tag => {
+            counts[tag] = (counts[tag] || 0) + 1;
+          });
+        }
+      });
+      return counts;
+    }
+
     // Load color data
     let colorData = {};
     let markers = [];
@@ -175,14 +258,16 @@
           if (data.Oahu) lines.push('Oahu');
           if (data.Kaala) lines.push('Kaala');
 
-          markers.push({
+          const marker = {
             name,
             hex: data.Hex,
             code: data.New,
             lines,
             data,
             hsv: hexToHSV(data.Hex)
-          });
+          };
+          marker.tags = generateTags(marker);
+          markers.push(marker);
         }
 
         return markers;

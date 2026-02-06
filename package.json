@@ -1,0 +1,26 @@
+{
+  "name": "swatchy",
+  "version": "1.0.0",
+  "description": "A Flask-based web application providing a suite of color tools for Ohuhu marker artists. Find the perfect colors, generate harmonious palettes, and extract colors from reference images.",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css",
+    "watch:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wwiens/swatchy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wwiens/swatchy/issues"
+  },
+  "homepage": "https://github.com/wwiens/swatchy#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}
