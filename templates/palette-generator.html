@@ -78,8 +78,7 @@
   }
 
   .color-column {
-    min-height: 60px;
-    flex: 1;
+    min-height: 80px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -93,6 +92,7 @@
   @media (min-width: 768px) {
     .color-column {
       min-height: 200px;
+      flex: 1;
       flex-direction: column;
       justify-content: center;
       padding: 20px;
@@ -278,7 +278,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="h-[calc(100vh-140px)] flex flex-col">
+<div class="flex flex-col">
   <!-- Header Controls -->
   <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -408,7 +408,7 @@
   </div>
 
   <!-- Palette Display -->
-  <div class="flex-1 bg-white rounded-2xl shadow-lg overflow-auto flex flex-col md:flex-row" id="paletteContainer">
+  <div class="bg-white rounded-2xl shadow-lg flex flex-col md:flex-row" id="paletteContainer">
     <!-- Color columns will be rendered here -->
   </div>
 </div>
@@ -951,7 +951,7 @@
         </div>` : '';
 
       return `
-        <div class="color-column flex-1 md:flex-[1] ${isLocked ? 'locked' : ''}"
+        <div class="color-column ${isLocked ? 'locked' : ''}"
              style="background: ${marker.hex}; color: ${textColor};"
              data-index="${index}">
           <div class="flex items-center gap-3 md:block md:text-center md:relative md:pt-0">
