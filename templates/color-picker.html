@@ -95,20 +95,19 @@
         </div>
       </div>
 
-      <!-- Product Info Section -->
-      <div class="border-t border-gray-200 pt-4 mb-6">
-        <div class="text-sm font-medium text-gray-700 mb-3">Individual Marker</div>
-        <div id="productSection">
-          <!-- Initial State - Action Button -->
-          <div id="productAction" class="text-center py-2">
-            <button id="findProductBtn" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-              <span>Find on Ohuhu</span>
-            </button>
-          </div>
+      <!-- Show Product Section Button -->
+      <div id="showProductSectionBtn" class="mt-4 text-center">
+        <button class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Find on Ohuhu</span>
+        </button>
+      </div>
 
+      <!-- Product Info Section (Hidden initially) -->
+      <div id="productSectionContainer" class="hidden border-t border-gray-200 pt-4 mb-6">
+        <div id="productSection">
           <!-- Loading State -->
           <div id="productLoading" class="hidden flex items-center justify-center py-4">
             <svg class="animate-spin h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -284,28 +283,36 @@
     document.getElementById('modalOahu').textContent = marker.data.Oahu || '—';
     document.getElementById('modalKaala').textContent = marker.data.Kaala || '—';
 
-    // Set up product search button
-    const findProductBtn = document.getElementById('findProductBtn');
-    if (findProductBtn) {
-      findProductBtn.onclick = () => fetchProductInfo(marker);
+    // Set up "Find on Ohuhu" button to show product section and fetch data
+    const showProductBtn = document.getElementById('showProductSectionBtn');
+    const productContainer = document.getElementById('productSectionContainer');
+
+    if (showProductBtn) {
+      showProductBtn.classList.remove('hidden');
+      showProductBtn.querySelector('button').onclick = () => {
+        showProductBtn.classList.add('hidden');
+        if (productContainer) productContainer.classList.remove('hidden');
+        fetchProductInfo(marker);
+      };
     }
 
-    // Reset product section to initial state (show button, hide others)
+    // Hide product container initially
+    if (productContainer) productContainer.classList.add('hidden');
+
+    // Reset product states
     resetProductSection();
 
     colorModal.classList.remove('hidden');
     colorModal.classList.add('flex');
   }
 
-  // Reset product section to initial state (show action button)
+  // Reset product section states (but keep container visibility as is)
   function resetProductSection() {
-    const productAction = document.getElementById('productAction');
     const productLoading = document.getElementById('productLoading');
     const productFound = document.getElementById('productFound');
     const productNotFound = document.getElementById('productNotFound');
     const productError = document.getElementById('productError');
 
-    if (productAction) productAction.classList.remove('hidden');
     if (productLoading) productLoading.classList.add('hidden');
     if (productFound) productFound.classList.add('hidden');
     if (productNotFound) productNotFound.classList.add('hidden');
@@ -395,6 +402,13 @@
     colorModal.classList.add('hidden');
     colorModal.classList.remove('flex');
     currentModalMarker = null;
+
+    // Reset product section and hide container
+    resetProductSection();
+    const showProductBtn = document.getElementById('showProductSectionBtn');
+    const productContainer = document.getElementById('productSectionContainer');
+    if (showProductBtn) showProductBtn.classList.remove('hidden');
+    if (productContainer) productContainer.classList.add('hidden');
   }
 
   // Copy hex from modal
