@@ -345,48 +345,61 @@
 
     <!-- Tag Filter Section -->
     <div class="border-t border-gray-100 pt-4">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-gray-700">Filter by Tags</h3>
+      <!-- Toggle Header -->
+      <button id="tagFilterToggle" class="w-full flex items-center justify-between text-left hover:bg-gray-50 -mx-4 px-4 py-2 rounded-lg transition-colors">
+        <div class="flex items-center gap-2">
+          <h3 class="text-sm font-semibold text-gray-700">Filter by Tags</h3>
+          <span id="tagFilterIndicator" class="hidden w-2 h-2 bg-primary-600 rounded-full"></span>
+        </div>
         <div class="flex items-center gap-2">
           <span id="tagMatchCount" class="text-xs text-gray-500">Loading...</span>
-          <button id="clearTagFilters" class="text-xs text-primary-600 hover:text-primary-700 font-medium hidden">Clear</button>
+          <svg id="tagFilterChevron" class="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Expandable Content -->
+      <div id="tagFilterContent" class="hidden">
+        <div class="flex items-center justify-between mb-3 mt-3">
+          <button id="clearTagFilters" class="text-xs text-primary-600 hover:text-primary-700 font-medium hidden">Clear All Filters</button>
+        </div>
+
+        <!-- Preset Buttons -->
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 hover:from-orange-200 hover:to-pink-200 transition-all border border-orange-200" data-preset="warm-pastels">
+            Warm Pastels
+          </button>
+          <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 transition-all border border-blue-200" data-preset="cool-vibrant">
+            Cool Vibrant
+          </button>
+          <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-100 to-stone-100 text-amber-700 hover:from-amber-200 hover:to-stone-200 transition-all border border-amber-200" data-preset="earth-tones">
+            Earth Tones
+          </button>
+          <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 hover:from-rose-200 hover:to-orange-200 transition-all border border-rose-200" data-preset="portrait">
+            Portrait Set
+          </button>
+          <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:from-purple-200 hover:to-pink-200 transition-all border border-purple-200" data-preset="harmony">
+            Harmonious
+          </button>
+        </div>
+
+        <!-- Tag Categories -->
+        <div class="flex flex-wrap gap-2" id="tagFilters">
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="warm">warm</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="cool">cool</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="light">light</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="dark">dark</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="muted">muted</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="vibrant">vibrant</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="pastel">pastel</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="skin-tone">skin-tone</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="earth-tone">earth-tone</button>
+          <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 transition-all" data-tag="clear">Clear All</button>
         </div>
       </div>
 
-      <!-- Preset Buttons -->
-      <div class="flex flex-wrap gap-2 mb-3">
-        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 hover:from-orange-200 hover:to-pink-200 transition-all border border-orange-200" data-preset="warm-pastels">
-          Warm Pastels
-        </button>
-        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 transition-all border border-blue-200" data-preset="cool-vibrant">
-          Cool Vibrant
-        </button>
-        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-100 to-stone-100 text-amber-700 hover:from-amber-200 hover:to-stone-200 transition-all border border-amber-200" data-preset="earth-tones">
-          Earth Tones
-        </button>
-        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 hover:from-rose-200 hover:to-orange-200 transition-all border border-rose-200" data-preset="portrait">
-          Portrait Set
-        </button>
-        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:from-purple-200 hover:to-pink-200 transition-all border border-purple-200" data-preset="harmony">
-          Harmonious
-        </button>
-      </div>
-
-      <!-- Tag Categories -->
-      <div class="flex flex-wrap gap-2" id="tagFilters">
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="warm">warm</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="cool">cool</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="light">light</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="dark">dark</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="muted">muted</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="vibrant">vibrant</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="pastel">pastel</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="skin-tone">skin-tone</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="earth-tone">earth-tone</button>
-        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 transition-all" data-tag="clear">Clear All</button>
-      </div>
-
-      <!-- Active Filters Display -->
+      <!-- Active Filters Display (always visible when filters are active) -->
       <div id="activeTagFilters" class="hidden mt-3 flex items-center gap-2 flex-wrap">
         <span class="text-xs text-gray-500">Active:</span>
         <div id="activeTagChips" class="flex items-center gap-1 flex-wrap"></div>
@@ -568,6 +581,24 @@
 
   // Initialize tag filtering
   function initTagFiltering() {
+    // Toggle tag filter section
+    const toggleBtn = document.getElementById('tagFilterToggle');
+    const content = document.getElementById('tagFilterContent');
+    const chevron = document.getElementById('tagFilterChevron');
+
+    if (toggleBtn && content) {
+      toggleBtn.addEventListener('click', () => {
+        const isHidden = content.classList.contains('hidden');
+        if (isHidden) {
+          content.classList.remove('hidden');
+          chevron.style.transform = 'rotate(180deg)';
+        } else {
+          content.classList.add('hidden');
+          chevron.style.transform = 'rotate(0deg)';
+        }
+      });
+    }
+
     // Tag chip click handlers
     document.querySelectorAll('.tag-chip').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -640,10 +671,13 @@
     // Update active filters display
     const activeFiltersDiv = document.getElementById('activeTagFilters');
     const activeFilterChips = document.getElementById('activeTagChips');
+    const indicator = document.getElementById('tagFilterIndicator');
+    const clearBtn = document.getElementById('clearTagFilters');
 
     if (selectedTags.size > 0) {
       activeFiltersDiv.classList.remove('hidden');
-      document.getElementById('clearTagFilters').classList.remove('hidden');
+      if (indicator) indicator.classList.remove('hidden');
+      if (clearBtn) clearBtn.classList.remove('hidden');
       activeFilterChips.innerHTML = Array.from(selectedTags).map(tag => `
         <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
           ${tag}
@@ -656,7 +690,8 @@
       `).join('');
     } else {
       activeFiltersDiv.classList.add('hidden');
-      document.getElementById('clearTagFilters').classList.add('hidden');
+      if (indicator) indicator.classList.add('hidden');
+      if (clearBtn) clearBtn.classList.add('hidden');
     }
   }
 
