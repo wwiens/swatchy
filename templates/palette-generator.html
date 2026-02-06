@@ -408,7 +408,7 @@
   </div>
 
   <!-- Palette Display -->
-  <div class="bg-white rounded-2xl shadow-lg flex flex-col md:flex-row" id="paletteContainer">
+  <div class="bg-white shadow-lg flex flex-col md:flex-row" id="paletteContainer">
     <!-- Color columns will be rendered here -->
   </div>
 </div>
@@ -950,8 +950,17 @@
           </svg>
         </div>` : '';
 
+      const isFirst = index === 0;
+      const isLast = index === currentPalette.length - 1;
+
+      // Rounded corners: mobile gets top/bottom, desktop gets left/right
+      const roundedClasses = [
+        isFirst ? 'rounded-t-2xl md:rounded-l-2xl md:rounded-t-none' : '',
+        isLast ? 'rounded-b-2xl md:rounded-r-2xl md:rounded-b-none' : ''
+      ].join(' ');
+
       return `
-        <div class="color-column ${isLocked ? 'locked' : ''}"
+        <div class="color-column ${isLocked ? 'locked' : ''} ${roundedClasses}"
              style="background: ${marker.hex}; color: ${textColor};"
              data-index="${index}">
           <div class="flex items-center gap-3 md:block md:text-center md:relative md:pt-0">
