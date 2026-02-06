@@ -1,12 +1,12 @@
 """
 Storage abstraction for themes.
-Uses local JSON file in development, Vercel KV in production.
+Uses Vercel KV when credentials are available, falls back to local JSON file.
 """
 import os
 import json
 from typing import List, Dict, Any, Optional
 
-# Try to import Vercel KV, but don't fail if not available (dev environment)
+# Try to import Vercel KV, but don't fail if not available
 try:
     from vercel_kv import KV
     KV_AVAILABLE = True
@@ -15,6 +15,14 @@ except ImportError:
 
 # Check if we're running on Vercel (production)
 IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
+
+
+def has_kv_credentials() -> bool:
+    """Check if Vercel KV credentials are available in environment."""
+    return bool(
+        os.environ.get('KV_URL') or 
+        os.environ.get('KV_REST_API_URL')
+    )
 
 # KV key prefixes
 THEME_PREFIX = "theme:"
@@ -149,16 +157,22 @@ class KVStorage(ThemeStorage):
 
 
 def get_storage() -> ThemeStorage:
-    """Factory function to get the appropriate storage backend."""
-    # Use KV if on Vercel and KV is available
-    if IS_VERCEL and KV_AVAILABLE:
+    """Factory function to get the appropriate storage backend.
+    
+    Uses KV if credentials are available (for local dev debugging or production).
+    Falls back to file storage otherwise.
+    """
+    # Use KV if credentials are available and KV is installed
+    if KV_AVAILABLE and has_kv_credentials():
         try:
+            print("Using Vercel KV storage")
             return KVStorage()
         except Exception as e:
             print(f"Failed to initialize KV storage: {e}, falling back to file storage")
             return FileStorage()
     
-    # Default to file storage (development)
+    # Default to file storage
+    print("Using file storage")
     return FileStorage()
 
 
