@@ -173,7 +173,7 @@
   </div>
 
   <!-- Themes Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="themesGrid">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch" id="themesGrid">
     <!-- Themes will be rendered here -->
   </div>
 
@@ -338,8 +338,8 @@
   function themeMatchesTags(theme, tags) {
     if (tags.length === 0) return true;
 
-    // A theme matches if at least one of its colors has all the selected tags
-    return theme.colors.some(color => {
+    // A theme matches only if ALL of its colors have all the selected tags
+    return theme.colors.every(color => {
       const marker = markers.find(m => m.name === color.name);
       if (!marker || !marker.tags) return false;
       return tags.every(tag => marker.tags.includes(tag));
@@ -392,14 +392,14 @@
         if (!hasColor) return false;
       }
 
-      // Tag filter - theme matches if at least one of its colors has all selected tags
+      // Tag filter - theme matches only if ALL of its colors have all selected tags
       if (tagsArray.length > 0) {
-        const hasMatchingColor = theme.colors.some(color => {
+        const allColorsMatchTags = theme.colors.every(color => {
           const marker = markers.find(m => m.name === color.name);
           if (!marker || !marker.tags) return false;
           return tagsArray.every(tag => marker.tags.includes(tag));
         });
-        if (!hasMatchingColor) return false;
+        if (!allColorsMatchTags) return false;
       }
 
       // Search filter (fuzzy matching)
@@ -558,10 +558,10 @@
   // Create a theme card element
   function createThemeCard(theme) {
     const div = document.createElement('div');
-    div.className = 'bg-white rounded-xl shadow-md overflow-hidden card-hover group cursor-pointer';
+    div.className = 'bg-white rounded-xl shadow-md overflow-hidden card-hover group cursor-pointer h-full flex flex-col';
 
-    // Calculate bar segments
-    const barHeight = theme.palette_size >= 5 ? 'h-28' : theme.palette_size === 4 ? 'h-24' : 'h-20';
+    // Fixed height for all color bars to ensure consistent card sizing
+    const barHeight = 'h-28';
 
     div.innerHTML = `
       <!-- Color Bar -->
@@ -580,7 +580,7 @@
       </div>
 
       <!-- Info Bar -->
-      <div class="px-4 py-3 flex items-center justify-between">
+      <div class="px-4 py-3 flex items-center justify-between flex-1">
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 rounded-full border-2 border-white shadow-sm" style="background: ${theme.seed_hex}"></div>
           <div>

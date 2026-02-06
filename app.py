@@ -2,6 +2,11 @@ from flask import Flask, render_template, send_from_directory, jsonify, request
 import os
 import urllib.request
 import json
+import urllib.parse
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -32,6 +37,129 @@ def color_picker():
 @app.route('/generated_themes.json')
 def generated_themes():
     return send_from_directory('.', 'generated_themes.json')
+
+@app.route('/api/save-theme', methods=['POST'])
+def save_theme():
+    """Save a new theme to the generated_themes.json file."""
+    try:
+        new_theme = request.get_json()
+        if not new_theme:
+            return jsonify({"success": False, "error": "No theme data provided"}), 400
+
+        # Read existing themes
+        themes_path = os.path.join(os.path.dirname(__file__), 'generated_themes.json')
+        with open(themes_path, 'r') as f:
+            data = json.load(f)
+
+        # Ensure themes list exists
+        if 'themes' not in data:
+            data['themes'] = []
+
+        # Add new theme to the beginning of the list
+        data['themes'].insert(0, new_theme)
+
+        # Write back to file
+        with open(themes_path, 'w') as f:
+            json.dump(data, f, indent=2)
+
+        return jsonify({"success": True, "message": "Theme saved successfully"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/generate-theme-name', methods=['POST'])
+def generate_theme_name():
+    """Generate a creative theme name using OpenAI based on the colors."""
+    try:
+        data = request.get_json()
+        if not data or 'colors' not in data:
+            return jsonify({"success": False, "error": "No color data provided"}), 400
+
+        colors = data['colors']
+        if not colors:
+            return jsonify({"success": False, "error": "Empty color list"}), 400
+
+        # Get API key from environment
+        api_key = os.environ.get('OPENAI_API_KEY')
+
+        if not api_key:
+            # Fallback: generate a name using simple logic
+            color_names = [c.get('name', '').split()[0] for c in colors[:2]]
+            fallback_name = f"{' '.join(color_names)} Blend" if len(color_names) > 1 else f"{color_names[0]} Dream" if color_names else "Custom Palette"
+            return jsonify({
+                "success": True,
+                "name": fallback_name,
+                "note": "Using fallback name generation (no OPENAI_API_KEY set)"
+            })
+
+        # Call OpenAI API
+        hex_list = [c.get('hex', '') for c in colors if c.get('hex')]
+
+        # Build palette with ordering info (light to dark)
+        hex_with_info = []
+        for i, hex_code in enumerate(hex_list):
+            position = "lightest" if i == 0 else "darkest" if i == len(hex_list) - 1 else f"color {i+1}"
+            hex_with_info.append(f"{hex_code} ({position})")
+        hex_formatted = '\n'.join(hex_with_info)
+
+        prompt = f"""Generate a single evocative theme name for this color palette.
+
+Palette (ordered, light → dark):
+{hex_formatted}
+
+Constraints:
+- Abstract but grounded, not cute, not generic
+- 1–3 words max
+- Draw from geography, atmosphere, material, or time-of-day metaphors
+- Avoid obvious color words (pink, beige, rose, blue, green, etc.)
+- No overused words: Whisper, Dream, Harmony, Symphony, Serenity, Essence
+- Suitable for a professional design system
+
+Analyze the HEX codes precisely — they encode hue, saturation, and luminance. Use this data to infer warmth vs neutrality, softness vs density, and atmospheric coherence.
+
+Respond with ONLY the theme name, nothing else."""
+
+        req = urllib.request.Request(
+            'https://api.openai.com/v1/chat/completions',
+            data=json.dumps({
+                'model': 'gpt-4o',
+                'messages': [
+                    {'role': 'system', 'content': 'You are a creative naming expert for art color palettes. You excel at evocative, unique names that capture the essence of color combinations. Never use generic words like Whisper, Dream, Harmony, Symphony, Serenity, Essence. Be specific and surprising.'},
+                    {'role': 'user', 'content': prompt}
+                ],
+                'max_tokens': 50,
+                'temperature': 1.2,
+                'presence_penalty': 0.6,
+                'frequency_penalty': 0.6
+            }).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+        )
+
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode('utf-8'))
+
+        generated_name = result['choices'][0]['message']['content'].strip().strip('"')
+
+        return jsonify({
+            "success": True,
+            "name": generated_name
+        })
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        return jsonify({
+            "success": False,
+            "error": f"AI service error: {error_body}"
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @app.route('/images/<path:filename>')
 def images(filename):
