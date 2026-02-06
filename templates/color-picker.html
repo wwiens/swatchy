@@ -2,6 +2,83 @@
 
 {% block title %}Color Picker - Swatchy{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Custom dropdown styling */
+.custom-select {
+  position: relative;
+  min-width: 100px;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.custom-select-trigger:active,
+.custom-select.open .custom-select-trigger {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+}
+
+.custom-select-trigger svg {
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.custom-select.open .custom-select-trigger svg {
+  transform: rotate(180deg);
+}
+
+.custom-select-options {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.custom-select.open .custom-select-options {
+  display: block;
+}
+
+.custom-select-option {
+  padding: 10px 14px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.custom-select-option:active,
+.custom-select-option:hover {
+  background: #f3f4f6;
+}
+
+.custom-select-option.selected {
+  background: #ede9fe;
+  font-weight: 600;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-6xl mx-auto">
   <!-- Header -->
@@ -27,22 +104,34 @@
       <!-- Line Filter -->
       <div class="flex items-center gap-2">
         <label class="text-sm font-medium text-gray-700">Line:</label>
-        <select id="lineFilter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
-          <option value="all">All Lines</option>
-          <option value="Honolulu">Honolulu</option>
-          <option value="Oahu">Oahu</option>
-          <option value="Kaala">Kaala</option>
-        </select>
+        <div class="custom-select" id="lineFilter" data-value="all">
+          <div class="custom-select-trigger">
+            <span>All Lines</span>
+            <svg viewBox="0 0 12 12" fill="#6b7280"><path d="M6 8L1 3h10z"/></svg>
+          </div>
+          <div class="custom-select-options">
+            <div class="custom-select-option selected" data-value="all">All Lines</div>
+            <div class="custom-select-option" data-value="Honolulu">Honolulu</div>
+            <div class="custom-select-option" data-value="Oahu">Oahu</div>
+            <div class="custom-select-option" data-value="Kaala">Kaala</div>
+          </div>
+        </div>
       </div>
 
       <!-- Sort -->
       <div class="flex items-center gap-2">
         <label class="text-sm font-medium text-gray-700">Sort:</label>
-        <select id="sortBy" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
-          <option value="name">Name</option>
-          <option value="code">Code</option>
-          <option value="hue">Hue</option>
-        </select>
+        <div class="custom-select" id="sortBy" data-value="name">
+          <div class="custom-select-trigger">
+            <span>Name</span>
+            <svg viewBox="0 0 12 12" fill="#6b7280"><path d="M6 8L1 3h10z"/></svg>
+          </div>
+          <div class="custom-select-options">
+            <div class="custom-select-option selected" data-value="name">Name</div>
+            <div class="custom-select-option" data-value="code">Code</div>
+            <div class="custom-select-option" data-value="hue">Hue</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -70,7 +159,12 @@
 
 <!-- Color Detail Modal -->
 <div class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" id="colorModal">
-  <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden">
+  <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden relative">
+    <button id="closeModalX" class="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/20 hover:bg-black/30 text-white transition-colors" aria-label="Close">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
     <div id="modalColorPreview" class="h-32 flex items-center justify-center">
       <h2 id="modalColorName" class="text-2xl font-bold text-white drop-shadow-lg"></h2>
     </div>
@@ -95,8 +189,17 @@
         </div>
       </div>
 
+      <div class="flex gap-3">
+        <button id="copyHexBtn" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+          Copy Hex
+        </button>
+        <button id="closeModalBtn" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+          Close
+        </button>
+      </div>
+
       <!-- Show Product Section Button -->
-      <div id="showProductSectionBtn" class="mt-4 text-center">
+      <div id="showProductSectionBtn" class="mt-6 pt-2 text-center">
         <button class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -106,7 +209,7 @@
       </div>
 
       <!-- Product Info Section (Hidden initially) -->
-      <div id="productSectionContainer" class="hidden border-t border-gray-200 pt-4 mb-6">
+      <div id="productSectionContainer" class="hidden border-t border-gray-200 pt-4 mt-6">
         <div id="productSection">
           <!-- Loading State -->
           <div id="productLoading" class="hidden flex items-center justify-center py-4">
@@ -119,7 +222,7 @@
 
           <!-- Product Found State -->
           <div id="productFound" class="hidden">
-            <div id="productsList" class="space-y-4 max-h-64 overflow-y-auto">
+            <div id="productsList" class="space-y-4">
               <!-- Products will be rendered here -->
             </div>
           </div>
@@ -134,15 +237,6 @@
             <p class="text-sm text-gray-500">Unable to load product information</p>
           </div>
         </div>
-      </div>
-
-      <div class="flex gap-3">
-        <button id="copyHexBtn" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
-          Copy Hex
-        </button>
-        <button id="closeModalBtn" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
-          Close
-        </button>
       </div>
     </div>
   </div>
@@ -161,8 +255,6 @@
 
   // DOM Elements
   const searchInput = document.getElementById('searchInput');
-  const lineFilter = document.getElementById('lineFilter');
-  const sortBy = document.getElementById('sortBy');
   const colorGrid = document.getElementById('colorGrid');
   const resultCount = document.getElementById('resultCount');
   const noResults = document.getElementById('noResults');
@@ -171,15 +263,15 @@
   // Initialize
   document.addEventListener('DOMContentLoaded', async () => {
     await loadColorData();
+    initCustomSelects();
     filterAndRender();
 
     // Event listeners
     searchInput.addEventListener('input', filterAndRender);
-    lineFilter.addEventListener('change', filterAndRender);
-    sortBy.addEventListener('change', filterAndRender);
 
     // Modal events
     document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('closeModalX').addEventListener('click', closeModal);
     document.getElementById('copyHexBtn').addEventListener('click', copyModalHex);
     colorModal.addEventListener('click', (e) => {
       if (e.target === colorModal) closeModal();
@@ -190,11 +282,56 @@
     });
   });
 
+  // Custom select helper functions
+  function getSelectValue(id) {
+    return document.getElementById(id).dataset.value;
+  }
+
+  function setSelectValue(id, value) {
+    const el = document.getElementById(id);
+    el.dataset.value = value;
+    const label = el.querySelector('.custom-select-option[data-value="' + value + '"]');
+    el.querySelector('.custom-select-trigger span').textContent = label ? label.textContent : value;
+    el.querySelectorAll('.custom-select-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+  }
+
+  function initCustomSelects() {
+    document.querySelectorAll('.custom-select').forEach(select => {
+      const trigger = select.querySelector('.custom-select-trigger');
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close any other open selects
+        document.querySelectorAll('.custom-select.open').forEach(s => {
+          if (s !== select) s.classList.remove('open');
+        });
+        select.classList.toggle('open');
+      });
+
+      select.querySelectorAll('.custom-select-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const value = option.dataset.value;
+          setSelectValue(select.id, value);
+          select.classList.remove('open');
+          filterAndRender();
+        });
+      });
+    });
+
+    // Close selects when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    });
+  }
+
   // Filter and render colors
   function filterAndRender() {
     const query = searchInput.value.toLowerCase().trim();
-    const line = lineFilter.value;
-    const sort = sortBy.value;
+    const line = getSelectValue('lineFilter');
+    const sort = getSelectValue('sortBy');
 
     // Filter
     filteredMarkers = markers.filter(marker => {
@@ -372,7 +509,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-medium text-gray-800 line-clamp-2">${product.title}</h3>
-          <p class="text-lg font-bold text-primary-600 mt-1">$${product.price}</p>
+          <p class="text-lg font-bold text-primary-600 mt-1">from $${product.price}</p>
           <a href="${product.url}" target="_blank" rel="noopener noreferrer"
              class="mt-2 inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium">
             <span>View on Ohuhu</span>

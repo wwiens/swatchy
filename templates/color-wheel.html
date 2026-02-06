@@ -657,7 +657,7 @@
 
           <!-- Product Found State -->
           <div id="productFound" class="hidden">
-            <div id="productsList" class="space-y-3 max-h-48 overflow-y-auto">
+            <div id="productsList" class="space-y-3">
               <!-- Products will be rendered here -->
             </div>
           </div>
@@ -767,7 +767,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <h3 class="text-xs font-medium text-gray-800 line-clamp-2">${product.title}</h3>
-          <p class="text-sm font-bold text-primary-600 mt-1">$${product.price}</p>
+          <p class="text-sm font-bold text-primary-600 mt-1">from $${product.price}</p>
           <a href="${product.url}" target="_blank" rel="noopener noreferrer"
              class="mt-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium">
             <span>View on Ohuhu</span>
@@ -1119,6 +1119,48 @@
     });
 
     document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        wheelContent.classList.remove('dragging');
+      }
+    });
+
+    // Touch events for mobile panning
+    wheelContainer.addEventListener('touchstart', (e) => {
+      if (zoomLevel <= 1) return;
+
+      isDragging = true;
+      const touch = e.touches[0];
+      dragStartX = touch.clientX;
+      dragStartY = touch.clientY;
+      dragStartPanX = panX;
+      dragStartPanY = panY;
+      wheelContent.classList.add('dragging');
+    }, { passive: false });
+
+    wheelContainer.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      const deltaX = (touch.clientX - dragStartX) / zoomLevel;
+      const deltaY = (touch.clientY - dragStartY) / zoomLevel;
+
+      panX = dragStartPanX + deltaX;
+      panY = dragStartPanY + deltaY;
+
+      clampPan();
+      applyTransform();
+    }, { passive: false });
+
+    wheelContainer.addEventListener('touchend', () => {
+      if (isDragging) {
+        isDragging = false;
+        wheelContent.classList.remove('dragging');
+      }
+    });
+
+    wheelContainer.addEventListener('touchcancel', () => {
       if (isDragging) {
         isDragging = false;
         wheelContent.classList.remove('dragging');
