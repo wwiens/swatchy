@@ -25,11 +25,10 @@ def has_kv_credentials() -> bool:
 
 def get_kv_config() -> Optional[Dict[str, str]]:
     """Get KV configuration from environment variables."""
-    # First try KV_URL (redis:// format)
+    # First try KV_URL (redis:// format) - need to convert to REST API URL
     kv_url = os.environ.get('KV_URL')
     if kv_url:
         # Parse redis://username:password@host:port format
-        # or redis://default:token@host:port
         try:
             # Remove redis:// prefix
             rest = kv_url.replace('redis://', '')
@@ -37,9 +36,11 @@ def get_kv_config() -> Optional[Dict[str, str]]:
             if '@' in rest:
                 auth, host_port = rest.split('@')
                 token = auth.split(':')[-1]  # Get password/token part
+                # Extract just the hostname (remove port if present)
+                host = host_port.split(':')[0]
                 return {
                     'token': token,
-                    'url': f"https://{host_port}"
+                    'url': f"https://{host}"
                 }
         except Exception:
             pass
@@ -51,7 +52,7 @@ def get_kv_config() -> Optional[Dict[str, str]]:
     if rest_url and rest_token:
         return {
             'token': rest_token,
-            'url': rest_url
+            'url': rest_url.rstrip('/')
         }
     
     return None
