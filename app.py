@@ -3,12 +3,17 @@ import os
 import urllib.request
 import json
 import urllib.parse
+import uuid
 from dotenv import load_dotenv
+from storage import get_storage_instance, FileStorage
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+
+# Initialize storage backend
+storage = get_storage_instance()
 
 @app.route('/')
 def index():
@@ -36,33 +41,39 @@ def color_picker():
 
 @app.route('/generated_themes.json')
 def generated_themes():
-    return send_from_directory('.', 'generated_themes.json')
+    """Serve themes - from KV in production, file in development."""
+    themes = storage.get_all_themes()
+    return jsonify({'themes': themes})
+
+
+@app.route('/api/themes', methods=['GET'])
+def get_themes():
+    """API endpoint to get all themes."""
+    try:
+        themes = storage.get_all_themes()
+        return jsonify({"success": True, "themes": themes})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/save-theme', methods=['POST'])
 def save_theme():
-    """Save a new theme to the generated_themes.json file."""
+    """Save a new theme to storage (KV in production, file in development)."""
     try:
         new_theme = request.get_json()
         if not new_theme:
             return jsonify({"success": False, "error": "No theme data provided"}), 400
 
-        # Read existing themes
-        themes_path = os.path.join(os.path.dirname(__file__), 'generated_themes.json')
-        with open(themes_path, 'r') as f:
-            data = json.load(f)
+        # Generate an ID if not provided
+        if 'id' not in new_theme:
+            new_theme['id'] = str(uuid.uuid4())
 
-        # Ensure themes list exists
-        if 'themes' not in data:
-            data['themes'] = []
+        # Save using storage abstraction
+        success = storage.save_theme(new_theme)
 
-        # Add new theme to the beginning of the list
-        data['themes'].insert(0, new_theme)
-
-        # Write back to file
-        with open(themes_path, 'w') as f:
-            json.dump(data, f, indent=2)
-
-        return jsonify({"success": True, "message": "Theme saved successfully"})
+        if success:
+            return jsonify({"success": True, "message": "Theme saved successfully", "id": new_theme['id']})
+        else:
+            return jsonify({"success": False, "error": "Failed to save theme"}), 500
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
