@@ -4,17 +4,15 @@ Uses Vercel KV when credentials are available, falls back to local JSON file.
 """
 import os
 import json
+import base64
 from typing import List, Dict, Any, Optional
 
-# Try to import Vercel KV, but don't fail if not available
+# Try to import requests for KV API calls
 try:
-    from vercel_kv import KV
-    KV_AVAILABLE = True
+    import requests
+    REQUESTS_AVAILABLE = True
 except ImportError:
-    KV_AVAILABLE = False
-
-# Check if we're running on Vercel (production)
-IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
+    REQUESTS_AVAILABLE = False
 
 
 def has_kv_credentials() -> bool:
@@ -24,10 +22,44 @@ def has_kv_credentials() -> bool:
         os.environ.get('KV_REST_API_URL')
     )
 
-# KV key prefixes
-THEME_PREFIX = "theme:"
-THEMES_LIST_KEY = "themes:list"
+
+def get_kv_config() -> Optional[Dict[str, str]]:
+    """Get KV configuration from environment variables."""
+    # First try KV_URL (redis:// format)
+    kv_url = os.environ.get('KV_URL')
+    if kv_url:
+        # Parse redis://username:password@host:port format
+        # or redis://default:token@host:port
+        try:
+            # Remove redis:// prefix
+            rest = kv_url.replace('redis://', '')
+            # Split auth and host
+            if '@' in rest:
+                auth, host_port = rest.split('@')
+                token = auth.split(':')[-1]  # Get password/token part
+                return {
+                    'token': token,
+                    'url': f"https://{host_port}"
+                }
+        except Exception:
+            pass
+    
+    # Fall back to REST API env vars
+    rest_url = os.environ.get('KV_REST_API_URL')
+    rest_token = os.environ.get('KV_REST_API_TOKEN')
+    
+    if rest_url and rest_token:
+        return {
+            'token': rest_token,
+            'url': rest_url
+        }
+    
+    return None
+
+
+# KV key for storing all themes
 THEMES_DATA_KEY = "themes:data"
+
 
 class ThemeStorage:
     """Abstract base class for theme storage."""
@@ -104,20 +136,60 @@ class FileStorage(ThemeStorage):
 
 
 class KVStorage(ThemeStorage):
-    """Vercel KV storage for production."""
+    """Vercel KV storage using REST API directly."""
     
     def __init__(self):
-        if not KV_AVAILABLE:
-            raise RuntimeError("Vercel KV SDK not available")
-        self.kv = KV()
+        if not REQUESTS_AVAILABLE:
+            raise RuntimeError("requests library not available")
+        
+        config = get_kv_config()
+        if not config:
+            raise RuntimeError("KV credentials not available")
+        
+        self.token = config['token']
+        self.base_url = config['url'].rstrip('/')
+    
+    def _make_request(self, command: str, key: str, value: Any = None) -> Any:
+        """Make a request to Vercel KV REST API."""
+        url = f"{self.base_url}/{command}/{key}"
+        headers = {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            if command in ['set', 'hset']:
+                response = requests.post(url, headers=headers, json=value, timeout=10)
+            else:  # get, hget, etc.
+                response = requests.get(url, headers=headers, timeout=10)
+            
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"KV API error ({command} {key}): {e}")
+            return None
     
     def get_all_themes(self) -> List[Dict[str, Any]]:
         try:
             # Get the stored themes data
-            data = self.kv.get(THEMES_DATA_KEY)
-            if data:
-                if isinstance(data, str):
-                    data = json.loads(data)
+            result = self._make_request('get', THEMES_DATA_KEY)
+            
+            if result is None:
+                return []
+            
+            # Handle different response formats
+            if isinstance(result, dict):
+                if 'result' in result:
+                    data = result['result']
+                else:
+                    data = result
+            else:
+                data = result
+            
+            if isinstance(data, str):
+                data = json.loads(data)
+            
+            if isinstance(data, dict):
                 return data.get('themes', [])
             return []
         except Exception as e:
@@ -133,9 +205,9 @@ class KVStorage(ThemeStorage):
             themes.insert(0, theme)
             
             # Store back to KV
-            self.kv.set(THEMES_DATA_KEY, json.dumps({'themes': themes}))
+            result = self._make_request('set', THEMES_DATA_KEY, {'themes': themes})
             
-            return True
+            return result is not None
         except Exception as e:
             print(f"Error saving to KV: {e}")
             return False
@@ -149,8 +221,8 @@ class KVStorage(ThemeStorage):
             if len(themes) == original_count:
                 return False
             
-            self.kv.set(THEMES_DATA_KEY, json.dumps({'themes': themes}))
-            return True
+            result = self._make_request('set', THEMES_DATA_KEY, {'themes': themes})
+            return result is not None
         except Exception as e:
             print(f"Error deleting from KV: {e}")
             return False
@@ -162,8 +234,8 @@ def get_storage() -> ThemeStorage:
     Uses KV if credentials are available (for local dev debugging or production).
     Falls back to file storage otherwise.
     """
-    # Use KV if credentials are available and KV is installed
-    if KV_AVAILABLE and has_kv_credentials():
+    # Use KV if credentials and requests are available
+    if has_kv_credentials() and REQUESTS_AVAILABLE:
         try:
             print("Using Vercel KV storage")
             return KVStorage()
