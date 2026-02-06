@@ -4,16 +4,99 @@
 
 {% block extra_css %}
 <style>
-  .color-column {
-    min-height: 200px;
+  /* Custom dropdown styling */
+  .custom-select {
+    position: relative;
+    min-width: 100px;
+  }
+
+  .custom-select-trigger {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 16px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .custom-select-trigger:active,
+  .custom-select.open .custom-select-trigger {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+  }
+
+  .custom-select-trigger svg {
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .custom-select.open .custom-select-trigger svg {
+    transform: rotate(180deg);
+  }
+
+  .custom-select-options {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .custom-select.open .custom-select-options {
+    display: block;
+  }
+
+  .custom-select-option {
+    padding: 10px 14px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .custom-select-option:active,
+  .custom-select-option:hover {
+    background: #f3f4f6;
+  }
+
+  .custom-select-option.selected {
+    background: #ede9fe;
+    font-weight: 600;
+  }
+
+  .color-column {
+    min-height: 60px;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
     position: relative;
     cursor: pointer;
     transition: flex 0.3s;
+  }
+
+  @media (min-width: 768px) {
+    .color-column {
+      min-height: 200px;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px;
+    }
   }
 
   .color-column:hover .color-actions {
@@ -21,28 +104,46 @@
   }
 
   .locked-indicator {
-    position: absolute;
-    top: -54px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 44px;
-    height: 44px;
+    position: relative;
+    width: 36px;
+    height: 36px;
     cursor: pointer;
     border-radius: 50%;
     transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    margin-right: 12px;
   }
 
   .locked-indicator:hover {
     background: rgba(0, 0, 0, 0.2);
   }
 
+  @media (min-width: 768px) {
+    .locked-indicator {
+      position: absolute;
+      top: -54px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 44px;
+      height: 44px;
+      margin-right: 0;
+    }
+  }
+
   .locked-indicator svg {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
     opacity: 0.7;
+  }
+
+  @media (min-width: 768px) {
+    .locked-indicator svg {
+      width: 28px;
+      height: 28px;
+    }
   }
 
   .locked-indicator .icon-unlocked {
@@ -58,33 +159,33 @@
   }
 
     .color-actions {
-    position: absolute;
-    bottom: 20px;
-    display: grid;
-    grid-template-columns: repeat(2, auto);
+    display: flex;
     gap: 8px;
-    opacity: 0;
-    transition: opacity 0.2s;
+    opacity: 1;
   }
 
-  @media (max-width: 768px) {
+  @media (min-width: 768px) {
     .color-actions {
-      opacity: 1;
-      position: relative;
-      bottom: auto;
-      margin-top: 10px;
+      position: absolute;
+      bottom: 20px;
       display: grid;
       grid-template-columns: repeat(2, auto);
       gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .color-column:hover .color-actions {
+      opacity: 1;
     }
   }
 
   .action-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: none;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     color: inherit;
     cursor: pointer;
     display: flex;
@@ -95,17 +196,24 @@
   }
 
   .action-btn:hover {
-    background: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.4);
     transform: scale(1.1);
   }
 
   .action-btn.locked {
-    background: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.5);
   }
 
-  .action-btn svg {
-    width: 18px;
-    height: 18px;
+  @media (min-width: 768px) {
+    .action-btn {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .action-btn.locked {
+      background: rgba(255,255,255,0.4);
+    }
   }
 
   .color-picker-overlay {
@@ -173,7 +281,7 @@
 <div class="h-[calc(100vh-140px)] flex flex-col">
   <!-- Header Controls -->
   <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-800">Palette Generator</h1>
         <p class="text-sm text-gray-600">Generate random color palettes with locking support</p>
@@ -183,23 +291,35 @@
         <!-- Palette Size -->
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700">Colors:</label>
-          <select id="paletteSize" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5" selected>5</option>
-            <option value="6">6</option>
-          </select>
+          <div class="custom-select" id="paletteSizeSelect" data-value="5">
+            <div class="custom-select-trigger">
+              <span>5</span>
+              <svg viewBox="0 0 12 12" fill="#6b7280"><path d="M6 8L1 3h10z"/></svg>
+            </div>
+            <div class="custom-select-options">
+              <div class="custom-select-option" data-value="3">3</div>
+              <div class="custom-select-option" data-value="4">4</div>
+              <div class="custom-select-option selected" data-value="5">5</div>
+              <div class="custom-select-option" data-value="6">6</div>
+            </div>
+          </div>
         </div>
 
         <!-- Line Filter -->
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700">Line:</label>
-          <select id="lineFilter" class="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none">
-            <option value="all">All</option>
-            <option value="Honolulu">Honolulu</option>
-            <option value="Oahu">Oahu</option>
-            <option value="Kaala">Kaala</option>
-          </select>
+          <div class="custom-select" id="lineFilterSelect" data-value="all">
+            <div class="custom-select-trigger">
+              <span>All</span>
+              <svg viewBox="0 0 12 12" fill="#6b7280"><path d="M6 8L1 3h10z"/></svg>
+            </div>
+            <div class="custom-select-options">
+              <div class="custom-select-option selected" data-value="all">All</div>
+              <div class="custom-select-option" data-value="Honolulu">Honolulu</div>
+              <div class="custom-select-option" data-value="Oahu">Oahu</div>
+              <div class="custom-select-option" data-value="Kaala">Kaala</div>
+            </div>
+          </div>
         </div>
 
         <!-- Generate Button -->
@@ -210,13 +330,72 @@
           Generate
         </button>
 
+        <!-- Copy All Button -->
+        <button id="copyAllBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2" title="Copy all color details">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Copy All
+        </button>
+
         <span class="hidden md:inline text-xs text-gray-400">or press Space</span>
+      </div>
+    </div>
+
+    <!-- Tag Filter Section -->
+    <div class="border-t border-gray-100 pt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Filter by Tags</h3>
+        <div class="flex items-center gap-2">
+          <span id="tagMatchCount" class="text-xs text-gray-500">Loading...</span>
+          <button id="clearTagFilters" class="text-xs text-primary-600 hover:text-primary-700 font-medium hidden">Clear</button>
+        </div>
+      </div>
+
+      <!-- Preset Buttons -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700 hover:from-orange-200 hover:to-pink-200 transition-all border border-orange-200" data-preset="warm-pastels">
+          Warm Pastels
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 hover:from-blue-200 hover:to-cyan-200 transition-all border border-blue-200" data-preset="cool-vibrant">
+          Cool Vibrant
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-100 to-stone-100 text-amber-700 hover:from-amber-200 hover:to-stone-200 transition-all border border-amber-200" data-preset="earth-tones">
+          Earth Tones
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 hover:from-rose-200 hover:to-orange-200 transition-all border border-rose-200" data-preset="portrait">
+          Portrait Set
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:from-purple-200 hover:to-pink-200 transition-all border border-purple-200" data-preset="harmony">
+          Harmonious
+        </button>
+      </div>
+
+      <!-- Tag Categories -->
+      <div class="flex flex-wrap gap-2" id="tagFilters">
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="warm">warm</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="cool">cool</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="light">light</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="dark">dark</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="muted">muted</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="vibrant">vibrant</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="pastel">pastel</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="skin-tone">skin-tone</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all" data-tag="earth-tone">earth-tone</button>
+        <button class="tag-chip px-2.5 py-1 rounded-full text-xs font-medium bg-gray-600 text-white hover:bg-gray-700 transition-all" data-tag="clear">Clear All</button>
+      </div>
+
+      <!-- Active Filters Display -->
+      <div id="activeTagFilters" class="hidden mt-3 flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-gray-500">Active:</span>
+        <div id="activeTagChips" class="flex items-center gap-1 flex-wrap"></div>
       </div>
     </div>
   </div>
 
   <!-- Palette Display -->
-  <div class="flex-1 bg-white rounded-2xl shadow-lg overflow-hidden flex" id="paletteContainer">
+  <div class="flex-1 bg-white rounded-2xl shadow-lg overflow-auto flex flex-col md:flex-row" id="paletteContainer">
     <!-- Color columns will be rendered here -->
   </div>
 </div>
@@ -259,9 +438,56 @@
   let currentPalette = [];
   let lockedIndices = new Set();
 
+  // Custom select helper
+  function getSelectValue(id) {
+    return document.getElementById(id).dataset.value;
+  }
+
+  function setSelectValue(id, value) {
+    const el = document.getElementById(id);
+    el.dataset.value = value;
+    const label = el.querySelector('.custom-select-option[data-value="' + value + '"]');
+    el.querySelector('.custom-select-trigger span').textContent = label ? label.textContent : value;
+    el.querySelectorAll('.custom-select-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+  }
+
+  function initCustomSelects() {
+    document.querySelectorAll('.custom-select').forEach(select => {
+      const trigger = select.querySelector('.custom-select-trigger');
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close any other open selects
+        document.querySelectorAll('.custom-select.open').forEach(s => {
+          if (s !== select) s.classList.remove('open');
+        });
+        select.classList.toggle('open');
+      });
+
+      select.querySelectorAll('.custom-select-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const value = option.dataset.value;
+          setSelectValue(select.id, value);
+          select.classList.remove('open');
+          generatePalette();
+        });
+      });
+    });
+
+    // Close selects when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    });
+  }
+
   // Load color data and init
   document.addEventListener('DOMContentLoaded', async () => {
     await loadColorData();
+    initCustomSelects();
+    initTagFiltering();
 
     // Check for colors in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -274,12 +500,11 @@
 
     // Event listeners
     document.getElementById('generateBtn').addEventListener('click', generatePalette);
-    document.getElementById('paletteSize').addEventListener('change', generatePalette);
-    document.getElementById('lineFilter').addEventListener('change', generatePalette);
+    document.getElementById('copyAllBtn').addEventListener('click', copyAllPaletteDetails);
 
     // Spacebar to generate
     document.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
         e.preventDefault();
         generatePalette();
       }
@@ -329,12 +554,239 @@
     });
   });
 
-  // Get filtered markers
-  function getFilteredMarkers() {
-    const lineFilter = document.getElementById('lineFilter').value;
-    if (lineFilter === 'all') return markers;
-    return markers.filter(m => m.lines.includes(lineFilter));
+  // Tag filtering state
+  let selectedTags = new Set();
+
+  // Preset configurations
+  const PRESETS = {
+    'warm-pastels': ['warm', 'light', 'muted'],
+    'cool-vibrant': ['cool', 'vibrant'],
+    'earth-tones': ['earth-tone'],
+    'portrait': ['skin-tone'],
+    'harmony': ['bright']
+  };
+
+  // Initialize tag filtering
+  function initTagFiltering() {
+    // Tag chip click handlers
+    document.querySelectorAll('.tag-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        if (chip.dataset.tag === 'clear') {
+          clearTagFilters();
+        } else {
+          toggleTag(chip.dataset.tag);
+        }
+      });
+    });
+
+    // Preset button handlers
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+    });
+
+    // Clear filters button
+    document.getElementById('clearTagFilters').addEventListener('click', clearTagFilters);
   }
+
+  // Toggle a tag selection
+  function toggleTag(tag) {
+    if (selectedTags.has(tag)) {
+      selectedTags.delete(tag);
+    } else {
+      selectedTags.add(tag);
+    }
+    updateTagUI();
+    updateTagMatchCount();
+  }
+
+  // Apply a preset configuration
+  function applyPreset(presetName) {
+    clearTagFilters();
+    const tags = PRESETS[presetName];
+    if (tags) {
+      tags.forEach(tag => selectedTags.add(tag));
+      updateTagUI();
+      updateTagMatchCount();
+
+      // Generate a harmonious palette from filtered colors
+      if (getFilteredMarkers().length >= parseInt(getSelectValue('paletteSizeSelect'))) {
+        generateHarmoniousPalette();
+      }
+    }
+  }
+
+  // Clear all tag filters
+  function clearTagFilters() {
+    selectedTags.clear();
+    updateTagUI();
+    updateTagMatchCount();
+  }
+
+  // Update tag chip UI based on selection state
+  function updateTagUI() {
+    document.querySelectorAll('.tag-chip').forEach(chip => {
+      const tag = chip.dataset.tag;
+      if (tag === 'clear') return;
+
+      if (selectedTags.has(tag)) {
+        chip.classList.remove('bg-gray-100', 'text-gray-600');
+        chip.classList.add('bg-primary-600', 'text-white');
+      } else {
+        chip.classList.remove('bg-primary-600', 'text-white');
+        chip.classList.add('bg-gray-100', 'text-gray-600');
+      }
+    });
+
+    // Update active filters display
+    const activeFiltersDiv = document.getElementById('activeTagFilters');
+    const activeFilterChips = document.getElementById('activeTagChips');
+
+    if (selectedTags.size > 0) {
+      activeFiltersDiv.classList.remove('hidden');
+      document.getElementById('clearTagFilters').classList.remove('hidden');
+      activeFilterChips.innerHTML = Array.from(selectedTags).map(tag => `
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+          ${tag}
+          <button onclick="paletteToggleTag('${tag}')" class="hover:bg-primary-200 rounded-full p-0.5">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </span>
+      `).join('');
+    } else {
+      activeFiltersDiv.classList.add('hidden');
+      document.getElementById('clearTagFilters').classList.add('hidden');
+    }
+  }
+
+  // Update the count of matching colors
+  function updateTagMatchCount() {
+    if (typeof markers === 'undefined' || markers.length === 0) return;
+
+    const count = getFilteredMarkers().length;
+    document.getElementById('tagMatchCount').textContent = `${count} color${count !== 1 ? 's' : ''} available`;
+  }
+
+  // Get filtered markers (line filter + tag filter)
+  function getFilteredMarkers() {
+    const lineFilter = getSelectValue('lineFilterSelect');
+    let filtered = markers;
+
+    if (lineFilter !== 'all') {
+      filtered = filtered.filter(m => m.lines.includes(lineFilter));
+    }
+
+    if (selectedTags.size > 0) {
+      const tagsArray = Array.from(selectedTags);
+      filtered = filtered.filter(m =>
+        m.tags && tagsArray.every(tag => m.tags.includes(tag))
+      );
+    }
+
+    return filtered;
+  }
+
+  // Generate a harmonious palette from filtered colors
+  function generateHarmoniousPalette() {
+    const size = parseInt(getSelectValue('paletteSizeSelect'));
+    const availableMarkers = getFilteredMarkers();
+
+    if (availableMarkers.length < size) {
+      showToast(`Not enough colors match (${availableMarkers.length} available)`);
+      return;
+    }
+
+    // Select colors using harmony rules
+    const selectedColors = selectHarmoniousColors(availableMarkers, size);
+
+    // Update palette
+    currentPalette = selectedColors;
+    lockedIndices.clear();
+    renderPalette();
+    showToast(`Generated ${size} harmonious colors`);
+  }
+
+  // Select colors using harmony rules (similar to theme-library)
+  function selectHarmoniousColors(colorPool, count) {
+    if (colorPool.length <= count) return [...colorPool];
+
+    const selected = [];
+    const used = new Set();
+
+    // Start with a random color
+    const startIdx = Math.floor(Math.random() * colorPool.length);
+    selected.push(colorPool[startIdx]);
+    used.add(startIdx);
+
+    // Harmony offsets
+    const harmonies = [
+      { offset: 0, weight: 3 },
+      { offset: 30, weight: 2 },
+      { offset: -30, weight: 2 },
+      { offset: 180, weight: 2 },
+      { offset: 150, weight: 1 },
+      { offset: -150, weight: 1 },
+      { offset: 120, weight: 1 },
+      { offset: -120, weight: 1 },
+    ];
+
+    while (selected.length < count && used.size < colorPool.length) {
+      let bestMatch = null;
+      let bestScore = -1;
+
+      for (let i = 0; i < colorPool.length; i++) {
+        if (used.has(i)) continue;
+
+        const color = colorPool[i];
+        const hue = color.hsv.h;
+
+        let score = 0;
+        for (const selectedColor of selected) {
+          const selectedHue = selectedColor.hsv.h;
+
+          for (const harmony of harmonies) {
+            const targetHue = (selectedHue + harmony.offset + 360) % 360;
+            const diffToHarmony = Math.min(Math.abs(hue - targetHue), 360 - Math.abs(hue - targetHue));
+            if (diffToHarmony < 30) {
+              score += harmony.weight * (1 - diffToHarmony / 30);
+            }
+          }
+
+          const vDiff = Math.abs(color.hsv.v - selectedColor.hsv.v) / 100;
+          const sDiff = Math.abs(color.hsv.s - selectedColor.hsv.s) / 100;
+          score += (vDiff + sDiff) * 0.5;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = { color, index: i };
+        }
+      }
+
+      if (bestMatch) {
+        selected.push(bestMatch.color);
+        used.add(bestMatch.index);
+      } else {
+        break;
+      }
+    }
+
+    while (selected.length < count && used.size < colorPool.length) {
+      const idx = Math.floor(Math.random() * colorPool.length);
+      if (!used.has(idx)) {
+        selected.push(colorPool[idx]);
+        used.add(idx);
+      }
+    }
+
+    return selected;
+  }
+
+  // Expose toggle function globally for active filter chips
+  window.paletteToggleTag = function(tag) {
+    toggleTag(tag);
+  };
 
   // Load colors from URL parameter
   function loadColorsFromUrl(colorsParam) {
@@ -353,7 +805,7 @@
     if (matchedMarkers.length > 0) {
       currentPalette = matchedMarkers;
       lockedIndices.clear();
-      document.getElementById('paletteSize').value = currentPalette.length;
+      setSelectValue('paletteSizeSelect', String(currentPalette.length));
       renderPalette();
       showToast(`Loaded ${currentPalette.length} colors`);
     } else {
@@ -409,11 +861,11 @@
 
   // Generate random palette
   function generatePalette() {
-    const size = parseInt(document.getElementById('paletteSize').value);
+    const size = parseInt(getSelectValue('paletteSizeSelect'));
     const availableMarkers = getFilteredMarkers();
 
     if (availableMarkers.length < size) {
-      showToast('Not enough markers available');
+      showToast(`Not enough markers match (${availableMarkers.length} available)`);
       return;
     }
 
@@ -455,33 +907,35 @@
 
       const lockedIndicator = isLocked ? `
         <div class="locked-indicator" data-action="unlock" title="Click to unlock">
-          <svg class="icon-locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="icon-locked w-5 h-5 md:w-7 md:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          <svg class="icon-unlocked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="icon-unlocked w-5 h-5 md:w-7 md:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
           </svg>
         </div>` : '';
 
       return `
-        <div class="color-column flex-1 ${isLocked ? 'locked' : ''}"
+        <div class="color-column flex-1 md:flex-[1] ${isLocked ? 'locked' : ''}"
              style="background: ${marker.hex}; color: ${textColor};"
              data-index="${index}">
-          <div class="text-center relative pt-8">
+          <div class="flex items-center gap-3 md:block md:text-center md:relative md:pt-0">
             ${lockedIndicator}
-            <div class="text-lg md:text-xl font-bold mb-1">${marker.name}</div>
-            <div class="text-2xl md:text-3xl font-bold font-mono mb-1">${marker.code}</div>
-            <div class="text-sm opacity-80 font-mono">${marker.hex}</div>
-            <div class="text-xs opacity-70 mt-1">${lineText}</div>
+            <div class="flex-1 md:block">
+              <div class="font-bold text-base md:text-xl md:mb-1">${marker.name}</div>
+              <div class="font-bold font-mono text-lg md:text-2xl md:mb-1">${marker.code}</div>
+              <div class="hidden md:block text-sm opacity-80 font-mono">${marker.hex}</div>
+              <div class="hidden md:block text-xs opacity-70 mt-1">${lineText}</div>
+            </div>
           </div>
           <div class="color-actions">
             <button class="action-btn" data-action="select" title="Select Color">
-              <svg viewBox="0 0 24 24" fill="currentColor">
+              <svg class="w-4 h-4 md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
               </svg>
             </button>
             <button class="action-btn ${isLocked ? 'locked' : ''}" data-action="lock" title="${isLocked ? 'Unlock' : 'Lock'}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 ${isLocked
                   ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
                   : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
@@ -489,13 +943,13 @@
               </svg>
             </button>
             <button class="action-btn" data-action="copy" title="Copy Hex">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
             <button class="action-btn" data-action="remove" title="Remove">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 md:w-[18px] md:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -529,6 +983,28 @@
     }
   }
 
+  // Copy all palette details to clipboard
+  async function copyAllPaletteDetails() {
+    if (currentPalette.length === 0) {
+      showToast('No colors to copy');
+      return;
+    }
+
+    const lines = currentPalette.map((marker, index) => {
+      const lineText = marker.lines.join(' / ') || 'New only';
+      return `${index + 1}. ${marker.name} - ${marker.code} (${marker.hex}) [${lineText}]`;
+    });
+
+    const textToCopy = lines.join('\n');
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      showToast(`Copied ${currentPalette.length} colors`);
+    } catch (err) {
+      showToast('Failed to copy');
+    }
+  }
+
   // Remove color from palette
   function removeColor(index) {
     if (currentPalette.length <= 2) {
@@ -549,7 +1025,7 @@
     }
     lockedIndices = newLocked;
 
-    document.getElementById('paletteSize').value = currentPalette.length;
+    setSelectValue('paletteSizeSelect', String(currentPalette.length));
     renderPalette();
   }
 
@@ -584,7 +1060,13 @@
 
   function renderPickerList(query) {
     const list = document.getElementById('pickerList');
-    const availableMarkers = getFilteredMarkers();
+    // Get markers filtered by line and tags
+    const lineFilter = getSelectValue('lineFilterSelect');
+    let availableMarkers = markers;
+    if (lineFilter !== 'all') {
+      availableMarkers = availableMarkers.filter(m => m.lines.includes(lineFilter));
+    }
+    // Don't apply tag filters to picker to give full flexibility
     const usedNames = new Set(currentPalette.map(m => m.name));
 
     let filtered = availableMarkers;
