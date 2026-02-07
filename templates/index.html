@@ -4,21 +4,30 @@
 
 {% block content %}
 <!-- Hero Section -->
-<div class="text-center py-12 md:py-16">
-  <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-6">
-    <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
-    500+ Ohuhu marker colors
+<div class="relative -mx-4 -mt-6 md:-mx-8 lg:-mx-12 mb-12">
+  <!-- Background Image -->
+  <div class="absolute inset-0">
+    <img src="{{ url_for('static', filename='images/flowers.jpeg') }}" alt="" class="w-full h-full object-cover">
+    <div class="absolute inset-0 bg-black/40"></div>
   </div>
-  <h1 class="flex flex-col items-center text-4xl md:text-6xl font-bold mb-6 font-comfortaa">
-    <img src="{{ url_for('static', filename='images/swatchy_logo.png') }}" alt="" class="h-32 w-auto object-contain rounded-lg mb-3">
-    <span class="text-gray-900">
-      Swatchy
-    </span>
-  </h1>
-  <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-    A suite of color tools designed for Ohuhu marker artists.
-    Explore harmonies, generate palettes, and find the perfect colors for your next masterpiece.
-  </p>
+  
+  <!-- Content -->
+  <div class="relative text-center py-16 md:py-24 lg:py-32 px-4">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-sm font-medium mb-6">
+      <span class="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></span>
+      500+ Ohuhu marker colors
+    </div>
+    <h1 class="flex flex-col items-center text-4xl md:text-6xl lg:text-7xl font-bold mb-6 font-comfortaa">
+      <img src="{{ url_for('static', filename='images/swatchy_logo.png') }}" alt="" class="h-24 md:h-32 w-auto object-contain rounded-lg mb-3 shadow-2xl">
+      <span class="text-white drop-shadow-lg">
+        Swatchy
+      </span>
+    </h1>
+    <p class="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8 drop-shadow-md">
+      A suite of color tools designed for Ohuhu marker artists.
+      Explore harmonies, generate palettes, and find the perfect colors for your next masterpiece.
+    </p>
+  </div>
 </div>
 
 <!-- Tools Grid -->
