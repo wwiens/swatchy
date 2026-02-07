@@ -128,8 +128,10 @@ The application uses several shared utilities defined in `base.html`:
 - `hsvToWheelPosition()` - Positions markers on the color wheel
 
 ## License
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
+You may use, modify, and redistribute this code for non-commercial purposes only.
 
-[Your License Here]
+https://creativecommons.org/licenses/by-nc/4.0/legalcode
 
 ## Contributing
 
