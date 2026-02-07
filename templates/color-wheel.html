@@ -324,13 +324,13 @@
         </div>
         <!-- Action Buttons -->
         <div class="flex gap-3 mt-4" id="harmonyActions">
-          <button id="openInPaletteBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
+          <button id="openInPaletteBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
             </svg>
             <span>Open in Palette Generator</span>
           </button>
-          <button id="copyHarmonyBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
+          <button id="copyHarmonyBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
@@ -880,10 +880,10 @@
     if (openBtn) {
       openBtn.disabled = !hasColors;
       if (hasColors) {
-        openBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        openBtn.classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
         openBtn.classList.add('bg-primary-600', 'hover:bg-primary-700', 'text-white');
       } else {
-        openBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        openBtn.classList.add('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
         openBtn.classList.remove('bg-primary-600', 'hover:bg-primary-700', 'text-white');
       }
     }
@@ -891,10 +891,10 @@
     if (copyBtn) {
       copyBtn.disabled = !hasColors;
       if (hasColors) {
-        copyBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        copyBtn.classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
         copyBtn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
       } else {
-        copyBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        copyBtn.classList.add('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
         copyBtn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
       }
     }
