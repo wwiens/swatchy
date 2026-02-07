@@ -324,13 +324,13 @@
         </div>
         <!-- Action Buttons -->
         <div class="flex gap-3 mt-4" id="harmonyActions">
-          <a href="/palette-generator" id="openInPaletteBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <button id="openInPaletteBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
             </svg>
             <span>Open in Palette Generator</span>
-          </a>
-          <button id="copyHarmonyBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+          </button>
+          <button id="copyHarmonyBtn" disabled class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
@@ -864,45 +864,61 @@
     updateHarmonyActions(palette);
   }
 
+  // Current harmony palette for action buttons
+  let currentHarmonyPalette = [];
+
   // Update harmony palette action buttons
   function updateHarmonyActions(palette) {
     const openBtn = document.getElementById('openInPaletteBtn');
     const copyBtn = document.getElementById('copyHarmonyBtn');
 
-    if (!palette || palette.length === 0) {
-      if (openBtn) openBtn.classList.add('hidden');
-      if (copyBtn) copyBtn.classList.add('hidden');
-      return;
-    }
+    // Store current palette for button handlers
+    currentHarmonyPalette = palette || [];
 
-    // Show buttons
-    if (openBtn) openBtn.classList.remove('hidden');
-    if (copyBtn) copyBtn.classList.remove('hidden');
+    const hasColors = currentHarmonyPalette.length > 0;
 
-    // Update "Open in Palette Generator" link with colors
     if (openBtn) {
-      const hexes = palette.map(m => encodeURIComponent(m.hex)).join(',');
-      openBtn.href = `/palette-generator?colors=${hexes}`;
+      openBtn.disabled = !hasColors;
+      if (hasColors) {
+        openBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        openBtn.classList.add('bg-primary-600', 'hover:bg-primary-700', 'text-white');
+      } else {
+        openBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        openBtn.classList.remove('bg-primary-600', 'hover:bg-primary-700', 'text-white');
+      }
     }
 
-    // Set up copy button
     if (copyBtn) {
-      copyBtn.onclick = () => copyHarmonyColors(palette);
+      copyBtn.disabled = !hasColors;
+      if (hasColors) {
+        copyBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        copyBtn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+      } else {
+        copyBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        copyBtn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+      }
     }
   }
 
-  // Copy harmony colors to clipboard
-  async function copyHarmonyColors(palette) {
-    if (!palette || palette.length === 0) return;
+  // Open in Palette Generator handler
+  function openInPaletteGenerator() {
+    if (currentHarmonyPalette.length === 0) return;
+    const hexes = currentHarmonyPalette.map(m => encodeURIComponent(m.hex)).join(',');
+    window.location.href = `/palette-generator?colors=${hexes}`;
+  }
 
-    const names = palette.map(m => m.name).join(', ');
-    const codes = palette.map(m => m.code).join(', ');
-    const hexes = palette.map(m => m.hex).join(', ');
+  // Copy harmony colors to clipboard
+  async function copyHarmonyColors() {
+    if (!currentHarmonyPalette || currentHarmonyPalette.length === 0) return;
+
+    const names = currentHarmonyPalette.map(m => m.name).join(', ');
+    const codes = currentHarmonyPalette.map(m => m.code).join(', ');
+    const hexes = currentHarmonyPalette.map(m => m.hex).join(', ');
     const text = `${names}\n${codes}\n${hexes}`;
 
     try {
       await navigator.clipboard.writeText(text);
-      showToast(`Copied ${palette.length} colors to clipboard`);
+      showToast(`Copied ${currentHarmonyPalette.length} colors to clipboard`);
     } catch (err) {
       showToast('Failed to copy colors');
     }
@@ -1107,6 +1123,10 @@
 
     // Initialize zoom controls
     initZoomControls();
+
+    // Harmony palette action buttons
+    document.getElementById('openInPaletteBtn').addEventListener('click', openInPaletteGenerator);
+    document.getElementById('copyHarmonyBtn').addEventListener('click', copyHarmonyColors);
   });
 
   // Zoom and Pan Functions
