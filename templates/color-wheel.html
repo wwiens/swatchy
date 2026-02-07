@@ -322,6 +322,21 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="harmonyPalette">
           <!-- Harmony colors will be rendered here -->
         </div>
+        <!-- Action Buttons -->
+        <div class="flex gap-3 mt-4" id="harmonyActions">
+          <a href="/palette-generator" id="openInPaletteBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
+            </svg>
+            <span>Open in Palette Generator</span>
+          </a>
+          <button id="copyHarmonyBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <span>Copy Colors</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -811,6 +826,9 @@
     document.getElementById('harmonyPalette').innerHTML = '';
     document.getElementById('harmonyLines').innerHTML = '';
 
+    // Hide harmony action buttons
+    updateHarmonyActions([]);
+
     // Clear product section and hide container
     resetProductSection();
     const showProductBtn = document.getElementById('showProductSectionBtn');
@@ -841,6 +859,72 @@
         </div>
       `;
     }).join('');
+
+    // Update action buttons
+    updateHarmonyActions(palette);
+  }
+
+  // Update harmony palette action buttons
+  function updateHarmonyActions(palette) {
+    const openBtn = document.getElementById('openInPaletteBtn');
+    const copyBtn = document.getElementById('copyHarmonyBtn');
+
+    if (!palette || palette.length === 0) {
+      if (openBtn) openBtn.classList.add('hidden');
+      if (copyBtn) copyBtn.classList.add('hidden');
+      return;
+    }
+
+    // Show buttons
+    if (openBtn) openBtn.classList.remove('hidden');
+    if (copyBtn) copyBtn.classList.remove('hidden');
+
+    // Update "Open in Palette Generator" link with colors
+    if (openBtn) {
+      const hexes = palette.map(m => encodeURIComponent(m.hex)).join(',');
+      openBtn.href = `/palette-generator?colors=${hexes}`;
+    }
+
+    // Set up copy button
+    if (copyBtn) {
+      copyBtn.onclick = () => copyHarmonyColors(palette);
+    }
+  }
+
+  // Copy harmony colors to clipboard
+  async function copyHarmonyColors(palette) {
+    if (!palette || palette.length === 0) return;
+
+    const names = palette.map(m => m.name).join(', ');
+    const codes = palette.map(m => m.code).join(', ');
+    const hexes = palette.map(m => m.hex).join(', ');
+    const text = `${names}\n${codes}\n${hexes}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`Copied ${palette.length} colors to clipboard`);
+    } catch (err) {
+      showToast('Failed to copy colors');
+    }
+  }
+
+  // Show toast notification
+  function showToast(message) {
+    // Create toast if it doesn't exist
+    let toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-all translate-y-4 pointer-events-none z-50';
+      document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+    }, 2000);
   }
 
   // Draw harmony lines on wheel
